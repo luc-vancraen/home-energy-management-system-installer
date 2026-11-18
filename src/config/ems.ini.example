@@ -1,0 +1,96 @@
+# HEMS-meetsysteem — configuratie
+# Dit systeem meet en rapporteert alleen; het schrijft nooit naar een toestel.
+# Eenvoudigst: wijzig de instellingen in het dashboard (pagina Instellingen).
+# Met de hand aanpassen kan ook; het meetprogramma en het dashboard lezen dit
+# bestand binnen ca. 10 s zelf opnieuw in (poort en bind: herstart nodig).
+
+[algemeen]
+tijdzone = Europe/Brussels
+
+[meter]
+# Lokale API van de uitleesdongle. HomeWizard P1 Meter:
+#   url = http://192.168.1.50/api/v1/data
+# (API v1 aanzetten in de HomeWizard-app; geef de dongle een vast IP in je router)
+url =
+# Demo-modus: auto = gesimuleerde metingen zolang url leeg is (standaard),
+# ja = altijd demo, nee = nooit demo. Demo-data gaat naar een aparte databank.
+demo = auto
+interval_seconden = 10
+
+[installatie]
+fasen = 3
+hoofdzekering_a = 25
+# Ondergrens van het kwartierbudget (Vlaanderen: pieken onder 2,5 kW tellen niet mee)
+minimum_piek_kw = 2.5
+
+[tarief]
+# Eenvoudigst: invullen in het dashboard (Instellingen -> Contract en tarief).
+# soort: enkel | dagnacht | variabel | dynamisch | blok   (blok = vast blok kWh/jaar + daarboven variabel)
+# bedragen: excl | incl  (btw); teruglevering is altijd zonder btw. Prijzen in EUR per kWh.
+soort = enkel
+bedragen = excl
+dag_eur_kwh = 0.00
+nacht_eur_kwh = 0.00
+dag_start_uur = 7
+dag_einde_uur = 22
+weekend_als_nacht = ja
+# Formule (variabel, dynamisch, boven het blok): factor x index (EUR/MWh) + toeslag (EUR/MWh)
+formule_factor = 1
+formule_toeslag_eur_mwh = 0
+blok_kwh_jaar = 0
+blok_eur_kwh = 0
+blok_verdeling = spp
+blok_doorschuiven = nee
+# Teruglevering: vast (injectie_eur_kwh) of formule/dynamisch (factor x index + toeslag, met minimum)
+injectie_soort = vast
+injectie_eur_kwh = 0.00
+injectie_factor = 1
+injectie_toeslag_eur_mwh = 0
+injectie_min_eur_kwh =
+# Waar je woont (Vlaanderen: gemeente -> netgebied -> officiele nettarieven, zie app/ems_netgebieden.py)
+land = BE
+gewest = VL
+gemeente =
+netgebied =
+# Netkosten en heffingen per kWh, capaciteitstarief, vaste kosten, btw
+distributie_eur_kwh = 0
+groenestroom_eur_kwh = 0
+wkk_eur_kwh = 0
+energiebijdrage_eur_kwh = 0
+accijns_eur_kwh = 0
+capaciteit_eur_kw_jaar = 0
+databeheer_eur_jaar = 0
+vast_eur_jaar = 0
+btw_procent = 6
+
+[provider]
+# Optioneel: API voor de day-ahead-marktprijzen.
+# Werkt zonder token:  api_url = https://api.energyzero.nl/v1/energyprices
+# ENTSO-E (gratis token via de transparantiewebsite):
+#   api_url = https://web-api.tp.entsoe.eu/api   en het token in .env als HEMS_PROVIDER_TOKEN
+api_url =
+# Netzone voor ENTSO-E (standaard België):
+gebied = 10YBE----------2
+
+[dashboard]
+poort = 8080
+bind = 0.0.0.0
+# Wachtwoord voor het dashboard (leeg = geen wachtwoord; enkel op je eigen thuisnetwerk gebruiken)
+wachtwoord =
+
+[rapport]
+map = rapporten
+# Het dagrapport wordt gemaakt door een systemd-timer (standaard elke ochtend 06:05).
+
+[mail]
+aan = nee
+smtp_host =
+smtp_poort = 465
+gebruiker =
+van =
+naar =
+# Het wachtwoord hoort NIET hier maar in .env als HEMS_MAIL_WACHTWOORD
+
+[opslag]
+db_pad = data/ems.db
+bewaar_ruwe_dagen = 730

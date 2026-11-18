@@ -1,0 +1,108 @@
+# HEMS-meetsysteem
+
+Een klein thuis-energiemeetsysteem voor een Linux-pc: het leest je digitale meter
+uit via een lokale dongle, bewaart de metingen, en toont ze op een webdashboard
+met dagrapporten. Gebouwd volgens het HEMS-template (`hems-template-nl.md`),
+profiel "Inzicht": **meten en rapporteren, niet sturen**. Het systeem schrijft
+nooit naar een toestel.
+
+Het draait volledig lokaal op standaard Python 3 (geen extra Python-pakketten,
+geen cloud, geen AI-platform nodig na de installatie).
+
+## Wat het doet
+
+- **Meter uitlezen** om de 10 seconden (HomeWizard P1 lokale API v1, of een dongle
+  met hetzelfde JSON-formaat) en opslaan in SQLite.
+- **Kwartiergemiddelden en maandpiek** zelf berekenen uit de tellerstanden
+  (Vlaams capaciteitstarief; pieken onder 2,5 kW tellen niet mee).
+- **Dashboard** op `http://<ip-van-de-pc>:8080`: live vermogen, kwartierbudget,
+  maandpiek, dagtotalen en kosten, grafiek, kwartiertabel, marktprijzen en
+  CSV-export.
+- **Dagrapport** (HTML) elke ochtend over gisteren, met oordeel OK/AANDACHT,
+  top-5 kwartierpieken en grafiek; optioneel per mail.
+- **Marktprijzen** dagelijks ophalen als een provider-API geconfigureerd is
+  (EnergyZero zonder token, of ENTSO-E met gratis token).
+
+## Vooraf zelf regelen (kan het systeem niet voor je doen)
+
+1. De gegevenspoort van je digitale meter activeren (in Vlaanderen via
+   "Mijn Fluvius"; kan enkele dagen duren).
+2. De dongle plaatsen en koppelen aan wifi/netwerk via de app van de fabrikant.
+3. Bij HomeWizard: **lokale API v1 aanzetten** in de app (Instellingen → Meter → API).
+4. De dongle een **vast IP-adres** geven in je router (DHCP-reservatie).
+
+## Installatie
+
+```bash
+bash hems-systeem-install.sh
+```
+
+De installer controleert de afhankelijkheden (python3 ≥ 3.9, tzdata, systemd),
+installeert wat ontbreekt via apt (daarvoor vraagt hij je sudo-wachtwoord),
+en **vraagt tijdens de installatie**:
+
+- de map (standaard `~/hems-systeem`),
+- de **meter-API**: de URL van je P1-dongle, bv. `http://192.168.1.50/api/v1/data`
+  (leeg = demo-modus met gesimuleerde metingen om te verkennen; de meter kies je
+  later gewoon in het dashboard, op de pagina **Instellingen**),
+- de **provider-API** voor marktprijzen (optioneel): URL en eventueel een token.
+  Het token komt in `.env` (alleen leesbaar voor jou), nooit in de config of in git,
+- de dashboardpoort (standaard 8080).
+
+Daarna installeert en start hij drie services en een timer
+(`ems-meter`, `ems-dashboard`, `ems-prijzen.timer`, `ems-rapport.timer`)
+en toont hij meteen een eerste meting. Op een pc met bureaubladomgeving komt er
+ook een snelkoppeling **HEMS Dashboard** (met icoon) in het toepassingenmenu en op
+het bureaublad, en bij GNOME (dat geen bureaubladpictogrammen toont) in het dock,
+die het dashboard opent in de browser.
+
+Handige opties: `--dir MAP`, `--meter-url URL`, `--provider-url URL`,
+`--poort N`, `--demo`, `--geen-services`, `--geen-snelkoppeling`, `--force`, `--help`.
+
+## Instellingen in het dashboard
+
+Open `http://<ip-van-de-pc>:8080/instellingen` (of klik op "instellingen" bovenaan
+het dashboard).
+
+- **Eerste keer**: kies een beheerwachtwoord. Daarvoor vraagt de pagina de
+  eenmalige **instelcode** die de installer op het einde toonde (ook te vinden in
+  `config/instelcode`). Zo kan niemand anders op je netwerk het wachtwoord kiezen.
+- **Meter**: klik op **Zoek mijn meter**; het systeem zoekt HomeWizard-toestellen op
+  je thuisnetwerk (alleen lezen) en toont ze in een keuzelijst. **Test** leest één
+  meting en toont je huidige vermogen. **Opslaan** zet het adres in de config.
+- Wijzigingen gaan binnen ca. 10 seconden in; herstarten is niet nodig. Bij elke
+  wijziging komt er een back-up van de config (`config/ems.ini.bak.*`). Bij een update bewaart de installer de vorige versie van gewijzigde programmabestanden in `backup/` (de laatste 5 updates).
+- Het beheerwachtwoord staat alleen als hash in `.env`. Vergeten? Verwijder de
+  regel `HEMS_BEHEER_WACHTWOORD` uit `.env` en kies een nieuw wachtwoord met de
+  instelcode uit `config/instelcode`.
+
+## Dagelijks gebruik
+
+- Dashboard: `http://<ip-van-de-pc>:8080`
+- Instellingen: `http://<ip-van-de-pc>:8080/instellingen`, of met de hand in
+  `~/hems-systeem/config/ems.ini` (wordt binnen ca. 10 s zelf opnieuw ingelezen)
+- Logboeken: `journalctl -u ems-meter -f`
+- Een meting testen: `python3 ~/hems-systeem/app/ems_meterd.py --config ~/hems-systeem/config/ems.ini --eenmalig`
+- Rapport nu maken: `python3 ~/hems-systeem/app/ems_rapport.py --config ~/hems-systeem/config/ems.ini`
+
+## Tarieven invullen
+
+Zet in `config/ems.ini` onder `[tarief]` je echte contractprijzen, anders zijn de
+kosten 0. Controleer de berekening tegen een factuur; tarieven veranderen
+(meestal op 1 januari): pas ze dan aan.
+
+## Verwijderen
+
+```bash
+bash ~/hems-systeem/verwijder.sh           # stopt en verwijdert de services
+bash ~/hems-systeem/verwijder.sh --alles   # verwijdert ook alle data en bestanden
+```
+
+## Veiligheid en privacy
+
+- Het systeem **leest alleen**. Er is geen stuurcode, dus het kan geen toestel
+  beïnvloeden. Wil je later ook sturen (batterijen, laadpaal): gebruik dan het
+  HEMS-template met een AI-agent, met het bijbehorende veiligheidsproces.
+- Je verbruiksdata is privé (het verraadt wanneer je thuis bent). Zet een
+  wachtwoord op het dashboard als je netwerk gedeeld is, en open nooit een
+  poort in je router naar dit systeem.
