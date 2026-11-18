@@ -29,7 +29,7 @@ if [ -z "${BASH_VERSION:-}" ]; then
 fi
 set -euo pipefail
 
-VERSIE="1.0.0"
+VERSIE="1.1.0"
 STANDAARD_DIR="$HOME/hems-systeem"
 ENERGYZERO="https://api.energyzero.nl/v1/energyprices"
 
@@ -485,10 +485,35 @@ installeer_unit() {
     sudo tee "/etc/systemd/system/$1" >/dev/null
 }
 
+# Hoort een bestaande unit bij deze projectmap? (ExecStart wijst naar $DEST/app/)
+unit_van_deze_map() {
+    [ -f "/etc/systemd/system/$1" ] && grep -q "^ExecStart=.* $DEST/app/" "/etc/systemd/system/$1"
+}
+OUDE_UNITS=""
+if [ "$GEEN_SERVICES" -eq 0 ]; then
+    for u in ems-meter.service ems-dashboard.service ems-rapport.service ems-prijzen.service; do
+        if unit_van_deze_map "$u"; then
+            case "$u" in
+                ems-meter.service|ems-dashboard.service) OUDE_UNITS="$OUDE_UNITS $u" ;;
+                *) OUDE_UNITS="$OUDE_UNITS ${u%.service}.timer" ;;
+            esac
+        elif [ -f "/etc/systemd/system/$u" ]; then
+            info "Er bestaat al een $u van een ander systeem: die blijft onaangeroerd (dit systeem gebruikt hems-systeem-*)."
+        fi
+    done
+    OUDE_UNITS="${OUDE_UNITS# }"
+    for u in hems-systeem-meter.service hems-systeem-dashboard.service; do
+        if [ -f "/etc/systemd/system/$u" ] && ! unit_van_deze_map "$u"; then
+            andere=$(sed -n 's|^ExecStart=[^ ]* \(.*\)/app/.*|\1|p' "/etc/systemd/system/$u" | head -n 1)
+            die "Er is al een HEMS-meetsysteem geïnstalleerd in ${andere:-een andere map}. Werk dat bij (kies die map) of verwijder het eerst met: bash ${andere:-<die map>}/verwijder.sh"
+        fi
+    done
+fi
+
 if [ "$GEEN_SERVICES" -eq 0 ]; then
     info "Stap 5/7: systemd-services installeren ..."
 
-    installeer_unit ems-meter.service <<EOF
+    installeer_unit hems-systeem-meter.service <<EOF
 [Unit]
 Description=HEMS meterdaemon (digitale meter uitlezen)
 After=network-online.target
@@ -505,7 +530,7 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-    installeer_unit ems-dashboard.service <<EOF
+    installeer_unit hems-systeem-dashboard.service <<EOF
 [Unit]
 Description=HEMS webdashboard
 After=network-online.target
@@ -522,7 +547,7 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-    installeer_unit ems-rapport.service <<EOF
+    installeer_unit hems-systeem-rapport.service <<EOF
 [Unit]
 Description=HEMS dagrapport maken
 
@@ -532,7 +557,7 @@ User=$USER
 ExecStart=$PYTHON_BIN $DEST/app/ems_rapport.py --config $CONFIG
 EOF
 
-    installeer_unit ems-rapport.timer <<'EOF'
+    installeer_unit hems-systeem-rapport.timer <<'EOF'
 [Unit]
 Description=HEMS dagrapport (elke ochtend over gisteren)
 
@@ -546,7 +571,7 @@ EOF
 
     # De prijzentimer staat er altijd: zonder ingestelde bron doet hij niets. Zo werkt het ook als
     # iemand de marktprijzen later aanzet op de pagina Instellingen.
-    installeer_unit ems-prijzen.service <<EOF
+    installeer_unit hems-systeem-prijzen.service <<EOF
 [Unit]
 Description=HEMS marktprijzen ophalen
 After=network-online.target
@@ -557,7 +582,7 @@ Type=oneshot
 User=$USER
 ExecStart=$PYTHON_BIN $DEST/app/ems_prijzen.py --config $CONFIG
 EOF
-    installeer_unit ems-prijzen.timer <<'EOF'
+    installeer_unit hems-systeem-prijzen.timer <<'EOF'
 [Unit]
 Description=HEMS marktprijzen ophalen (day-ahead komt rond 13 uur; extra pogingen voor als het mislukt)
 
@@ -570,13 +595,26 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 EOF
-    UNITS="ems-meter.service ems-dashboard.service ems-rapport.timer ems-prijzen.timer"
+    UNITS="hems-systeem-meter.service hems-systeem-dashboard.service hems-systeem-rapport.timer hems-systeem-prijzen.timer"
 
     sudo systemctl daemon-reload
-    sudo systemctl enable --now $UNITS
-    # enable --now start niets dat al draait: herstarten zodat nieuwe code en config gelden
-    sudo systemctl restart ems-meter.service ems-dashboard.service
-    [ -n "$PROVIDER_URL" ] && { sudo systemctl start ems-prijzen.service || warn "Prijzen ophalen mislukt; zie: journalctl -u ems-prijzen"; }
+    sudo systemctl enable $UNITS
+    # Omzetten vanaf versie 1.0 (services heetten ems-*): de oude units van DEZE installatie stoppen en
+    # weghalen vóór de nieuwe starten (anders bezetten ze de poort). Units met die naam van een ander systeem
+    # (niet in deze projectmap) blijven onaangeroerd.
+    if [ -n "$OUDE_UNITS" ]; then
+        sudo systemctl disable --now $OUDE_UNITS 2>/dev/null || true
+        for u in $OUDE_UNITS; do
+            sudo rm -f "/etc/systemd/system/$u"
+            case "$u" in *.timer) sudo rm -f "/etc/systemd/system/${u%.timer}.service" ;; esac
+        done
+        sudo systemctl daemon-reload
+        ok "Oude servicenamen (versie 1.0) omgezet naar hems-systeem-*: $OUDE_UNITS"
+    fi
+    sudo systemctl start $UNITS
+    # start doet niets bij een service die al draait: herstarten zodat nieuwe code en config gelden
+    sudo systemctl restart hems-systeem-meter.service hems-systeem-dashboard.service
+    [ -n "$PROVIDER_URL" ] && { sudo systemctl start hems-systeem-prijzen.service || warn "Prijzen ophalen mislukt; zie: journalctl -u hems-systeem-prijzen"; }
     ok "Services actief: $UNITS"
 else
     info "Stap 5/7: services overgeslagen (--geen-services)"
@@ -668,8 +706,8 @@ $( [ -n "$INSTELCODE" ] && echo "  Instelcode:    $INSTELCODE   (eenmalig: hierm
 $( [ "$SNELKOPPELING_OK" -eq 1 ] && echo "  Snelkoppeling:  'HEMS Dashboard' $waar" )
 
 Handige commando's:
-  journalctl -u ems-meter -f                      # live logboek van de metingen
-  systemctl status ems-meter ems-dashboard        # status van de services
+  journalctl -u hems-systeem-meter -f                      # live logboek van de metingen
+  systemctl status hems-systeem-meter hems-systeem-dashboard        # status van de services
   bash $DEST/verwijder.sh                         # alles stoppen en verwijderen
 EOF
 [ "$DEMO" -eq 1 ] && cat <<EOF

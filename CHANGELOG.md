@@ -1,5 +1,15 @@
 # Wijzigingen
 
+## 1.1.0 (18 november 2026)
+
+- Eigen servicenamen: `hems-systeem-meter`, `hems-systeem-dashboard`, `hems-systeem-prijzen` en `hems-systeem-rapport`
+  (waren `ems-*`). Zo botst het systeem niet meer met een ander systeem dat dezelfde algemene namen gebruikt.
+- Bijwerken vanaf 1.0 zet de oude services van deze installatie vanzelf om. Services met een oude naam die bij een
+  ander systeem horen, blijven onaangeroerd.
+- `verwijder.sh` verwijdert enkel services die bij de eigen projectmap horen.
+- Staat er al een HEMS-meetsysteem in een andere map, dan stopt de installer met uitleg in plaats van het te
+  overschrijven.
+
 ## 1.0.0 (18 november 2026)
 
 Eerste publieke versie.
@@ -17,7 +27,3 @@ Eerste publieke versie.
 - Updates bewaren de vorige programmabestanden in `backup/` (laatste 5 updates).
 - Getest op Debian 13 (GNOME, Wayland) in een virtuele machine: installeren en bijwerken met vensters, meter zoeken
   op het thuisnetwerk. Ook in tekstmodus zonder bureaublad.
-
-Bekend punt, voor 1.1: de services heten nog algemeen (`ems-meter`, `ems-dashboard`, `ems-prijzen`, `ems-rapport`) en
-kunnen botsen met een zelfgebouwd systeem met dezelfde namen. Versie 1.1 krijgt eigen namen en zet bestaande
-installaties bij het bijwerken netjes om.

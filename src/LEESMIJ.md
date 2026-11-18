@@ -50,7 +50,7 @@ en **vraagt tijdens de installatie**:
 - de dashboardpoort (standaard 8080).
 
 Daarna installeert en start hij drie services en een timer
-(`ems-meter`, `ems-dashboard`, `ems-prijzen.timer`, `ems-rapport.timer`)
+(`hems-systeem-meter`, `hems-systeem-dashboard`, `hems-systeem-prijzen.timer`, `hems-systeem-rapport.timer`; tot versie 1.0 heetten ze `ems-*`, een update zet dat vanzelf om)
 en toont hij meteen een eerste meting. Op een pc met bureaubladomgeving komt er
 ook een snelkoppeling **HEMS Dashboard** (met icoon) in het toepassingenmenu en op
 het bureaublad, en bij GNOME (dat geen bureaubladpictogrammen toont) in het dock,
@@ -81,7 +81,7 @@ het dashboard).
 - Dashboard: `http://<ip-van-de-pc>:8080`
 - Instellingen: `http://<ip-van-de-pc>:8080/instellingen`, of met de hand in
   `~/hems-systeem/config/ems.ini` (wordt binnen ca. 10 s zelf opnieuw ingelezen)
-- Logboeken: `journalctl -u ems-meter -f`
+- Logboeken: `journalctl -u hems-systeem-meter -f`
 - Een meting testen: `python3 ~/hems-systeem/app/ems_meterd.py --config ~/hems-systeem/config/ems.ini --eenmalig`
 - Rapport nu maken: `python3 ~/hems-systeem/app/ems_rapport.py --config ~/hems-systeem/config/ems.ini`
 

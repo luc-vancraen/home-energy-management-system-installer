@@ -10,11 +10,22 @@ ALLES=0
 [ "${1:-}" = "--alles" ] && ALLES=1
 
 echo "Services stoppen en uitschakelen ..."
-sudo systemctl disable --now ems-meter.service ems-dashboard.service ems-prijzen.timer ems-rapport.timer 2>/dev/null || true
-sudo rm -f /etc/systemd/system/ems-meter.service /etc/systemd/system/ems-dashboard.service \
-           /etc/systemd/system/ems-prijzen.service /etc/systemd/system/ems-prijzen.timer \
-           /etc/systemd/system/ems-rapport.service /etc/systemd/system/ems-rapport.timer
-sudo systemctl daemon-reload
+# Enkel units die bij DEZE projectmap horen (ExecStart wijst naar $MAP/app/): hems-systeem-* (sinds 1.1) en de
+# oude namen ems-* (versie 1.0). Een ems-* van een ander systeem blijft staan.
+weg=""
+for basis in hems-systeem-meter hems-systeem-dashboard hems-systeem-prijzen hems-systeem-rapport \
+             ems-meter ems-dashboard ems-prijzen ems-rapport; do
+    f="/etc/systemd/system/$basis.service"
+    if [ -f "$f" ] && grep -q "^ExecStart=.* $MAP/app/" "$f"; then
+        weg="$weg $basis.service"
+        [ -f "/etc/systemd/system/$basis.timer" ] && weg="$weg $basis.timer"
+    fi
+done
+if [ -n "$weg" ]; then
+    sudo systemctl disable --now $weg 2>/dev/null || true
+    for u in $weg; do sudo rm -f "/etc/systemd/system/$u"; done
+    sudo systemctl daemon-reload
+fi
 echo "Services verwijderd."
 
 bureaublad=""
