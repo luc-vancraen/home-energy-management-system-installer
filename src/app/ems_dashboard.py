@@ -347,7 +347,8 @@ def _pagina(titel, inhoud):
             f"<style>{STIJL}</style></head><body><h1>{titel}</h1>"
             "<p class='nav'><a href='/'>&larr; dashboard</a></p>"
             f"{inhoud}<p class='voet'>HEMS-meetsysteem — Instellingen wijzigen alleen de eigen "
-            "configuratie van dit systeem, nooit een toestel. Copyright (c) 2026 luc-vancraen</p></body></html>")
+            "configuratie van dit systeem, nooit een toestel. Copyright (c) 2026 luc-vancraen</p>"
+            f"{ec.OOGJE}</body></html>")
 
 
 def eerste_keer_pagina(code="", fout=""):

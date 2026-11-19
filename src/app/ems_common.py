@@ -717,3 +717,24 @@ def svg_grafiek(punten, titel, tz=None, breedte=920, hoogte=280):
     delen.append(f'<text x="{breedte-marge_r}" y="14" text-anchor="end" font-size="11" fill="{KLEUR_TEKST}">kW  —  boven de stippellijn: afname, eronder: teruglevering</text>')
     return (f'<svg width="{breedte}" height="{hoogte}" viewBox="0 0 {breedte} {hoogte}" '
             f'xmlns="http://www.w3.org/2000/svg" role="img">{"".join(delen)}</svg>')
+
+
+# Oogje naast elk wachtwoordveld (wachtwoorden, tokens, API-sleutels): tonen/verbergen.
+# Werkt ook voor velden die later door JavaScript gemaakt worden.
+OOGJE = ("<style>.oogvak{display:flex;gap:6px;align-items:stretch;max-width:620px}"
+         ".oogvak>input{flex:1;min-width:0;max-width:none!important;margin:0}"
+         ".oogvak>button.oog{margin:0;padding:0 12px;font-size:1.1em;line-height:1;min-width:46px}</style>"
+         "<script>(function(){function oog(r){(r.querySelectorAll?r:document).querySelectorAll("
+         "'input[type=password]:not([data-oog])').forEach(function(i){i.setAttribute('data-oog','1');"
+         "var v=document.createElement('span');v.className='oogvak';i.parentNode.insertBefore(v,i);v.appendChild(i);"
+         "var b=document.createElement('button');b.type='button';b.className='oog';b.textContent='\\u{1F441}';"
+         "b.title='Tonen';b.setAttribute('aria-label','Tonen');b.setAttribute('aria-pressed','false');"
+         "b.onclick=function(){var t=i.type==='password';i.type=t?'text':'password';"
+         "b.textContent=t?'\\u{1F648}':'\\u{1F441}';b.title=t?'Verbergen':'Tonen';"
+         "b.setAttribute('aria-label',b.title);b.setAttribute('aria-pressed',t?'true':'false');i.focus()};"
+         "v.appendChild(b)})}"
+         "function start(){oog(document);new MutationObserver(function(m){m.forEach(function(x){"
+         "x.addedNodes.forEach(function(n){if(n.nodeType===1)oog(n.parentNode||document)})})})"
+         ".observe(document.body,{childList:true,subtree:true})}"
+         "if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start()})();"
+         "</script>")

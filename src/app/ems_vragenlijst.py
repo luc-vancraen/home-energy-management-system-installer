@@ -576,4 +576,4 @@ def pagina(csrf, cfg, cfgpad, db_pad, stijl_basis):
             "<div class='indeling'><nav class='zij' id='zij'></nav><main class='inhoud' id='inhoud'></main></div>"
             "<p class='voet'>De vragenlijst wijzigt niets aan het meetsysteem of aan een toestel; ze maakt enkel het "
             "bestand mijn-installatie.md. Copyright (c) 2026 luc-vancraen</p>"
-            f"<script>const INIT={init};{_JS_EXTRA}{ei._JS}</script></body></html>")
+            f"<script>const INIT={init};{_JS_EXTRA}{ei._JS}</script>{ec.OOGJE}</body></html>")

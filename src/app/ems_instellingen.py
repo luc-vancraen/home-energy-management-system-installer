@@ -1096,7 +1096,7 @@ def pagina(csrf, cfg, cfgpad, db_pad, stijl_basis):
             "<div class='indeling'><nav class='zij' id='zij'></nav><main class='inhoud' id='inhoud'></main></div>"
             "<p class='voet'>Instellingen wijzigen alleen de eigen configuratie van dit meetsysteem (met back-up), "
             "nooit een toestel. Copyright (c) 2026 luc-vancraen</p>"
-            f"<script>const INIT={init};{_JS}</script></body></html>")
+            f"<script>const INIT={init};{_JS}</script>{ec.OOGJE}</body></html>")
 
 
 def ontsnap(x):

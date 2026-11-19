@@ -1,5 +1,10 @@
 # Wijzigingen
 
+## 1.3.1 (19 november 2026)
+
+- **Oogje** naast elk wachtwoordveld (beheerwachtwoord, kijkwachtwoord, mailwachtwoord, ENTSO-E-token, aanmelden):
+  tik erop om te zien wat je typt, nog eens om het weer te verbergen. Handig bij lange tokens of op een tablet.
+
 ## 1.3.0 (19 november 2026)
 
 - **Nieuw: starter `hems-bouwen-met-ai.sh`** (versie 1.1.0, apart bestand in de release): installeert een AI-agent
