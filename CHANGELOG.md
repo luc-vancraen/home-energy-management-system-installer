@@ -1,5 +1,41 @@
 # Wijzigingen
 
+## 1.3.0 (19 november 2026)
+
+- **Nieuw: starter `hems-bouwen-met-ai.sh`** (versie 1.1.0, apart bestand in de release): installeert een AI-agent
+  (Claude Code, OpenAI Codex CLI, Gemini CLI of Kimi Code), haalt de laatste template op, maakt de projectmap
+  `~/hems-ai` met git en zet een knop "HEMS bouwen met AI" in het menu. Stuurt niets aan.
+- **Tabletweergave** op `/tablet`: een donkere pagina voor een tablet aan de muur of een oud scherm, met live
+  energiestroom tussen net en huis (en per fase t.o.v. de hoofdzekering), het lopende kwartier tegenover het budget
+  van het capaciteitstarief (met aftellen), de marktprijzen van vandaag en morgen (goedkoop/duur gekleurd, goedkoopste
+  uur van de komende 12 u), afname, teruglevering en kosten van vandaag en deze maand, en het vermogen van vandaag.
+  Werkt staand, liggend en op een gsm; knop voor volledig scherm; geen internet of externe bibliotheken nodig.
+  Link "tabletweergave" bovenaan het dashboard, uitleg bij Instellingen > Dashboard.
+- **Kaarten op de tablet**: andere programma's (bv. sturingsmodules gebouwd met de AI) tonen zon, batterij, auto,
+  laadpaal, warmtepomp ... door een JSON-bestand te schrijven in `data/tablet/` (formaat in LEESMIJ). Met
+  `stroom_w` komt het toestel ook in het stroomschema (zon/batterij/net naar huis, huis naar auto). Toestellen uit de
+  vragenlijst zonder kaart verschijnen als "nog niet gekoppeld". Het meetsysteem leest die bestanden alleen.
+- **Eigen foto's op de tablet**: bij Instellingen > Dashboard een foto opladen per toestel (auto, batterij, zon, ...);
+  de browser verkleint ze eerst, ze blijft op de pc en verschijnt groot op de kaart van dat toestel. Een PNG met
+  doorzichtige achtergrond (bv. een uitgeknipte auto) staat zonder vak en met een schaduw op de kaart.
+- **Gas en water** op de tablet: verbruik van vandaag (m³ en liter) met vergelijking met gisteren tot hetzelfde uur,
+  zodra de digitale meter een gas- of watermeter doorgeeft.
+- **Gas- en watertarief** bij Instellingen > Gas en water (gas per kWh zoals op de factuur, met omrekening m³ naar kWh,
+  netkosten en heffingen, vaste kosten en btw; water per m³ en vaste kosten, met btw). De tablet toont de kosten van
+  vandaag en van deze maand in de tegels gas en water.
+- Vragenlijst: nieuwe vraag "Hoeveel personen zijn er gedomicilieerd?" (verbruik inschatten, basistarief water).
+- **Fout opgelost**: de waterstand werd nooit opgeslagen (verkeerde veldnaam); gas en water komen nu uit de lijst
+  `external` van de HomeWizard P1 Meter (gas ook nog uit `total_gas_m3`).
+- Tablet: **weer en zoninstraling** (Open-Meteo, gratis, locatie uit de gemeente; uit te zetten bij Instellingen >
+  Dashboard), **hoogste kwartieren van de maand** en **vergelijking met gisteren tot hetzelfde uur**.
+- `mijn-installatie.md` bevat nu ook de bedragen van je contract (energieprijs of formule, blok, injectie, netkosten
+  en heffingen, vaste kosten, btw) zoals ingevuld op de pagina Instellingen, zodat de AI-assistent ze niet opnieuw
+  vraagt. Ontbreekt de leverancier of de hoofdzekering, dan staat er "niet ingevuld".
+- Installer: het slotoverzicht toont ook het adres van de tablet; met `--geen-services` staat er hoe je het systeem
+  met de hand start (in plaats van commando's voor services die er niet zijn). LEESMIJ heeft daar nu een stukje over.
+- Geen lege tussenkopjes meer, en de echte projectmap staat in de uitleg voor de AI.
+- `verwijder.sh` weigert onbekende opties (vroeger startte bv. `verwijder.sh --versie` gewoon het verwijderen).
+
 ## 1.2.0 (18 november 2026)
 
 - Nieuw: vragenlijst **Mijn installatie** (Instellingen → "Later sturing met AI"), voor wie later met een

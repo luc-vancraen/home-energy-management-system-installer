@@ -170,6 +170,33 @@ def schema(cfg):
              {"id": "vast", "type": "getal", "eenheid": "€/jaar", "label": "Vaste vergoeding van de leverancier", "leeg_mag": True},
              {"id": "btw", "type": "getal", "eenheid": "%", "label": "Btw", "hulp": "In België 6 % voor elektriciteit thuis."},
          ]},
+        {"id": "gaswater", "titel": "Gas en water", "icoon": "🔥",
+         "intro": "Prijzen voor gas en water, zoals op je facturen. Ze worden gebruikt voor de kosten op de "
+                  "tabletweergave. Laat leeg wat je niet hebt of niet wil zien.",
+         "velden": [
+             {"id": "k_gas", "type": "kop", "label": "Gas",
+              "hulp": "Op je gasfactuur staan de prijzen per kWh. De meter telt in m³; de omrekening staat ook op de factuur."},
+             {"id": "gas_bedragen", "type": "keuze", "label": "De gasbedragen die je hieronder invult, zijn",
+              "opties": [["excl", "zonder btw"], ["incl", "met btw"]]},
+             {"id": "gas_energie", "type": "getal", "eenheid": "c€/kWh", "label": "Energieprijs gas (leverancier)",
+              "leeg_mag": True, "plaats": "bv. 4,5"},
+             {"id": "gas_net", "type": "getal", "eenheid": "c€/kWh",
+              "label": "Netkosten en heffingen samen (distributie, transport, energiebijdrage, accijns)",
+              "leeg_mag": True, "plaats": "bv. 2,1"},
+             {"id": "gas_vast", "type": "getal", "eenheid": "€/jaar", "label": "Vaste kosten gas per jaar",
+              "leeg_mag": True, "plaats": "bv. 60",
+              "hulp": "Vaste vergoeding van de leverancier plus databeheer, opgeteld."},
+             {"id": "gas_kwh_m3", "type": "getal", "eenheid": "kWh/m³", "label": "Omrekening van m³ naar kWh",
+              "hulp": "Staat op je factuur (calorische waarde of omrekeningsfactor), meestal tussen 10,5 en 11,6."},
+             {"id": "gas_btw", "type": "getal", "eenheid": "%", "label": "Btw op gas", "toon": ["gas_bedragen", "excl"],
+              "hulp": "België: 6 % voor gezinnen."},
+             {"id": "k_water", "type": "kop", "label": "Water",
+              "hulp": "Op de waterfactuur staan drinkwater en saneringsbijdragen apart: tel ze per m³ op, met btw."},
+             {"id": "water_m3", "type": "getal", "eenheid": "€/m³", "label": "Prijs per m³ water, alles samen, met btw",
+              "leeg_mag": True, "plaats": "bv. 5,40"},
+             {"id": "water_vast", "type": "getal", "eenheid": "€/jaar", "label": "Vaste kosten water per jaar, met btw",
+              "leeg_mag": True, "plaats": "bv. 110", "hulp": "Vastrecht drinkwater plus vaste saneringsvergoeding."},
+         ]},
         {"id": "prijzen", "titel": "Marktprijzen", "icoon": "📈",
          "intro": "Optioneel. De marktprijzen per uur of kwartier (day-ahead), elke middag voor de volgende dag. "
                   "Handig bij een dynamisch contract of om te vergelijken.",
@@ -232,6 +259,15 @@ def schema(cfg):
               "opties": [["0.0.0.0", "Het hele thuisnetwerk (gsm, andere pc's)"],
                          ["127.0.0.1", "Alleen deze pc"]],
               "hulp": "Kies je 'Alleen deze pc', dan kan je het dashboard niet meer vanaf een ander toestel openen."},
+             {"id": "weer", "type": "vink", "label": "Weer en zonprognose tonen op de tablet",
+              "hulp": "Via Open-Meteo (gratis, zonder account), voor de gemeente bij Contract en tarief. "
+                      "Het dashboard vraagt hoogstens om de 30 minuten het weer op; daarbij gaat alleen de "
+                      "ligging van je gemeente naar Open-Meteo, geen verbruik."},
+             {"id": "i_tablet", "type": "info",
+              "label": "Tabletweergave voor aan de muur: open op een tablet of oud scherm het adres van dit dashboard "
+                       "met /tablet erachter (bv. http://192.168.1.20:8080/tablet). Tik op het vierkantje rechtsboven "
+                       "voor volledig scherm, en zet in de instellingen van de tablet 'scherm uit' op nooit (of laat "
+                       "hem aan de lader). Kies hierboven 'Het hele thuisnetwerk', anders kan de tablet er niet bij."},
          ]},
         {"id": "algemeen", "titel": "Algemeen", "icoon": "⚙️",
          "velden": [
@@ -255,6 +291,15 @@ def _getal_tekst(x):
     return s.replace(".", ",")
 
 
+def _gaswater_waarden(cfg):
+    t = __import__("ems_kosten").gaswater(cfg)
+    leeg = lambda x, f=1: _getal_tekst(x * f) if x else ""
+    return {"gas_bedragen": "incl" if t["gas_incl"] else "excl", "gas_energie": leeg(t["gas_energie"], 100),
+            "gas_net": leeg(t["gas_net"], 100), "gas_vast": leeg(t["gas_vast"]),
+            "gas_kwh_m3": _getal_tekst(t["gas_kwh_m3"]), "gas_btw": _getal_tekst(t["gas_btw"]),
+            "water_m3": leeg(t["water_m3"]), "water_vast": leeg(t["water_vast"])}
+
+
 def waarden(cfg, cfgpad):
     env = _env(cfgpad)
     url_p = ec.cfg_str(cfg, "provider", "api_url").lower()
@@ -276,6 +321,7 @@ def waarden(cfg, cfgpad):
         "meter": {"url": ec.cfg_str(cfg, "meter", "url"), "demo": demo if demo in ("auto", "ja", "nee") else "auto"},
         "tarief": _tarief_waarden(cfg),
         "prijzen": {"bron": bron, "land": land, "token": bool(env.get("HEMS_PROVIDER_TOKEN"))},
+        "gaswater": _gaswater_waarden(cfg),
         "installatie": {"fasen": fasen if fasen in ("1", "3") else "3",
                         "hoofdzekering": zekering if int(zekering) in ZEKERINGEN else "25",
                         "minimum_piek_kw": _getal_tekst(ec.cfg_float(cfg, "installatie", "minimum_piek_kw", 2.5))},
@@ -287,7 +333,8 @@ def waarden(cfg, cfgpad):
         "dashboard": {"beveiligen": dashboard_beveiligd(cfg, cfgpad),
                       "kijkwachtwoord": dashboard_beveiligd(cfg, cfgpad),
                       "poort": str(ec.cfg_int(cfg, "dashboard", "poort", 8080)),
-                      "bind": ec.cfg_str(cfg, "dashboard", "bind", "0.0.0.0")},
+                      "bind": ec.cfg_str(cfg, "dashboard", "bind", "0.0.0.0"),
+                      "weer": ec.cfg_bool(cfg, "tablet", "weer", True)},
         "algemeen": {"tijdzone": ec.cfg_str(cfg, "algemeen", "tijdzone", "Europe/Brussels")},
     }
 
@@ -401,6 +448,11 @@ def overzicht(cfg, cfgpad, db_pad):
         zet("installatie", "let", f"De meter meldt {f_meter} fase(n), ingesteld: {i['fasen']}")
     else:
         zet("installatie", "ok", f"{i['fasen']} fase{'n' if i['fasen'] == '3' else ''} · {i['hoofdzekering']} A")
+
+    gk = __import__("ems_kosten")
+    gt = gk.gaswater(cfg)
+    delen = [x for x, ok in (("gas", gk.gas_ingevuld(gt)), ("water", gk.water_ingevuld(gt))) if ok]
+    zet("gaswater", "ok" if delen else "opt", ("Ingevuld: " + " en ".join(delen)) if delen else "Niet ingevuld (optioneel)")
 
     m = w["mail"]
     if m["aan"]:
@@ -582,6 +634,18 @@ def _opslaan(sectie, w, cfg, cfgpad, db_pad):
         if bron != "geen":
             bericht += " Klik op 'Test en haal de prijzen op' om te controleren."
 
+    elif sectie == "gaswater":
+        def opt(k, hoog, naam):
+            return 0.0 if not str(w.get(k, "")).strip() else _getal(w, k, 0, hoog, naam)
+        z = {("gaswater", "gas_bedragen"): _keuze(w, "gas_bedragen", ("excl", "incl"), "Gasbedragen"),
+             ("gaswater", "gas_energie_eur_kwh"): _eur(opt("gas_energie", 100, "Energieprijs gas") / 100),
+             ("gaswater", "gas_net_eur_kwh"): _eur(opt("gas_net", 100, "Netkosten en heffingen gas") / 100),
+             ("gaswater", "gas_vast_eur_jaar"): _eur(opt("gas_vast", 2000, "Vaste kosten gas")),
+             ("gaswater", "gas_kwh_m3"): _eur(_getal(w, "gas_kwh_m3", 5, 15, "Omrekening m³ naar kWh")),
+             ("gaswater", "gas_btw_procent"): _eur(_getal(w, "gas_btw", 0, 25, "Btw op gas")),
+             ("gaswater", "water_eur_m3"): _eur(opt("water_m3", 50, "Prijs per m³ water")),
+             ("gaswater", "water_vast_eur_jaar"): _eur(opt("water_vast", 2000, "Vaste kosten water"))}
+        ec.zet_config(cfgpad, z)
     elif sectie == "installatie":
         fasen = _keuze(w, "fasen", ("1", "3"), "Aantal fasen")
         zek = _keuze(w, "hoofdzekering", [str(a) for a in ZEKERINGEN], "Hoofdzekering")
@@ -636,7 +700,8 @@ def _opslaan(sectie, w, cfg, cfgpad, db_pad):
                 ec.zet_env(envpad, "HEMS_DASHBOARD_WACHTWOORD", "")
         oud_poort = ec.cfg_int(cfg, "dashboard", "poort", 8080)
         oud_bind = ec.cfg_str(cfg, "dashboard", "bind", "0.0.0.0")
-        wijz = {("dashboard", "poort"): str(poort), ("dashboard", "bind"): bind}
+        wijz = {("dashboard", "poort"): str(poort), ("dashboard", "bind"): bind,
+                ("tablet", "weer"): "ja" if w.get("weer") else "nee"}
         if ec.cfg_str(cfg, "dashboard", "wachtwoord"):
             wijz[("dashboard", "wachtwoord")] = ""      # oud wachtwoord in klare tekst: vervangen door de hash in .env
             if bev and not ww and not env.get("HEMS_DASHBOARD_WACHTWOORD"):
@@ -845,6 +910,7 @@ function teken(){const c=$('inhoud');c.innerHTML='';
   maak('button',{type:'button',class:'hoofd',id:'bewaar',onclick:()=>bewaar(false)},'Opslaan'),
   maak('button',{type:'button',onclick:()=>bewaar(true)},'Opslaan en verder →'));
  if(actief==='tarief')p.append(maandIndexBlok());
+ if(actief==='dashboard')p.append(fotoBlok());
  if(actief==='meter')kn.append(maak('button',{type:'button',id:'testknop',onclick:testMeter},'Test de meter'));
  if(actief==='prijzen')kn.append(maak('button',{type:'button',id:'prijsknop',onclick:testPrijzen},'Test en haal de prijzen op'));
  if(actief==='mail'&&D.waarden.mail.aan)kn.append(maak('button',{type:'button',id:'mailknop',onclick:testMail},'Testmail sturen'));
@@ -868,6 +934,30 @@ function veld(s,v,w){const id='v_'+v.id;let inp;const val=w[v.id];
   inputmode:v.type==='getal'?'decimal':null});inp.oninput=wijzig}
  const invoer=v.eenheid?maak('div',{class:'metenheid'},inp,maak('span',{},v.eenheid)):inp;
  return maak('div',{class:'veld',id:'r_'+v.id},maak('label',{for:id},v.label),invoer,v.hulp?maak('div',{class:'hulp'},v.hulp):null)}
+const FOTO_SOORTEN=[['auto','Auto'],['laadpaal','Laadpaal'],['batterij','Thuisbatterij'],['zon','Zonnepanelen'],['warmtepomp','Warmtepomp'],['boiler','Boiler'],['stekker','Stekker'],['ander','Ander toestel']];
+function fotoBlok(){const sel=maak('select',{id:'foto_soort'});for(const[k,t]of FOTO_SOORTEN)sel.add(new Option(t,k));
+ const b=maak('div',{class:'veld',id:'fotoblok'},maak('h3',{},'Foto\'s voor de tablet'),
+  maak('div',{class:'hulp'},'Een eigen foto van je auto, batterij, zonnepanelen ... verschijnt groot op de kaart van dat toestel in de tabletweergave. De foto wordt hier eerst verkleind (max. 1200 px breed) en blijft op deze pc. Een PNG met doorzichtige achtergrond (auto uitgeknipt) staat zonder vak op de tablet.'),
+  maak('label',{for:'foto_soort'},'Voor welk toestel?'),sel,
+  maak('label',{for:'foto_bestand'},'Foto'),maak('input',{type:'file',accept:'image/*',id:'foto_bestand'}),
+  maak('div',{class:'knoppen'},maak('button',{type:'button',id:'fotoknop',onclick:fotoOp},'Foto opladen')),
+  maak('div',{class:'melding',id:'fotomelding'}),maak('div',{id:'fotolijst',style:'display:flex;gap:12px;flex-wrap:wrap;margin-top:8px'}));
+ setTimeout(fotoLijst,0);return b}
+function fotoLijst(){const l=$('fotolijst');if(!l)return;l.innerHTML='';
+ for(const[k,t]of FOTO_SOORTEN){if(!D.fotos[k])continue;
+  l.append(maak('div',{style:'text-align:center;font-size:.85em'},maak('img',{src:'/tablet/foto/'+D.fotos[k],alt:t,style:'height:80px;border-radius:8px;display:block;margin-bottom:4px'}),t+' ',
+   maak('button',{type:'button',onclick:async()=>{if(!confirm('Foto van "'+t+'" verwijderen?'))return;const r=await post('/instellingen/foto-weg',{soort:k});if(r.fotos)D.fotos=r.fotos;meld('fotomelding',r.ok,r.ok?r.bericht:r.fout);fotoLijst()}},'Verwijderen')))}}
+async function fotoOp(){const f=$('foto_bestand').files[0];if(!f)return meld('fotomelding',false,'Kies eerst een foto.');
+ const knop=$('fotoknop');knop.disabled=true;meld('fotomelding',true,'Bezig met verkleinen en opladen ...');
+ try{const url=URL.createObjectURL(f);const img=new Image();await new Promise((ok,nok)=>{img.onload=ok;img.onerror=()=>nok(new Error('Dit bestand kan de browser niet als foto openen.'));img.src=url});
+  const sc=Math.min(1,1200/img.naturalWidth);const c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*sc);c.height=Math.round(img.naturalHeight*sc);
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);
+  const png=f.type==='image/png';   // PNG blijft PNG: een uitgeknipte foto houdt zo haar doorzichtige achtergrond
+  const blob=await new Promise(ok=>c.toBlob(ok,png?'image/png':'image/jpeg',.85));
+  const r=await fetch('/instellingen/foto?soort='+encodeURIComponent($('foto_soort').value),{method:'POST',headers:{'Content-Type':png?'image/png':'image/jpeg','X-HEMS-CSRF':CSRF},body:blob});
+  if(r.status===401){alert('Je bent afgemeld (sessie verlopen). Meld opnieuw aan.');location.reload();return}
+  const j=await r.json();if(j.fotos)D.fotos=j.fotos;meld('fotomelding',j.ok,j.ok?j.bericht:j.fout);fotoLijst();if(j.ok)$('foto_bestand').value=''}
+ catch(e){meld('fotomelding',false,String(e.message||e))}finally{knop.disabled=false}}
 function lees(v){const e=$('v_'+v.id);if(!e)return null;return v.type==='vink'?e.checked:e.value}
 function zet(id,waarde){const e=$('v_'+id);if(!e)return;e.value=waarde;e.dispatchEvent(new Event(e.tagName==='SELECT'?'change':'input'))}
 function zichtbaar(){const s=S[actief];if(!s||!s.velden)return;const w=D.waarden[actief];
@@ -994,6 +1084,7 @@ def pagina(csrf, cfg, cfgpad, db_pad, stijl_basis):
         "voorbeeld_net": __import__("ems_kosten").VOORBEELD_NET,
         "netgebieden": _ng().NETGEBIEDEN, "gemeenten": _ng().GEMEENTEN, "nettarief_geldig": [_ng().GELDIG_VAN, _ng().GELDIG_TOT],
         "heffingen_be": _ng().HEFFINGEN_BE, "certificaten_vl": _ng().CERTIFICATEN_VL,
+        "fotos": __import__("ems_tablet").fotos(cfgpad),
     }
     # </ in JSON onschadelijk maken zodat niets het script-blok kan afsluiten
     init = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")

@@ -40,12 +40,21 @@ def hw_naar_rij(d):
     imp = (g("total_power_import_t1_kwh") or 0) + (g("total_power_import_t2_kwh") or 0)
     exp = (g("total_power_export_t1_kwh") or 0) + (g("total_power_export_t2_kwh") or 0)
     piek = d.get("montly_power_peak_w", d.get("monthly_power_peak_w"))
+    # gas- en watermeter hangen aan de digitale meter: HomeWizard geeft ze in de lijst "external"
+    # (gas ook nog als total_gas_m3). Bij meerdere meters van dezelfde soort: de eerste.
+    extern = {}
+    for e in d.get("external") or []:
+        if isinstance(e, dict) and e.get("type") and e.get("value") is not None and e.get("unit") in ("m3", "m³", None):
+            extern.setdefault(e["type"], float(e["value"]))
+    gas = g("total_gas_m3")
+    if gas is None:
+        gas = extern.get("gas_meter")
     return (
         ec.iso(ec.utc_nu()), round(imp, 3), round(exp, 3), g("active_power_w"),
         g("active_power_l1_w"), g("active_power_l2_w"), g("active_power_l3_w"),
         g("active_current_l1_a"), g("active_current_l2_a"), g("active_current_l3_a"),
         g("active_voltage_l1_v"), g("active_voltage_l2_v"), g("active_voltage_l3_v"),
-        g("total_gas_m3"), g("watermeter_total_m3"),
+        gas, extern.get("water_meter"),
         g("active_power_average_w"), float(piek) if piek is not None else None,
     )
 

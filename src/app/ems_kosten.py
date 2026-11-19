@@ -346,3 +346,43 @@ def tabel_html(k):
     for w in k["waarschuwingen"]:
         h.append(f"<p class='uitleg'>⚠ {w}</p>")
     return "".join(h)
+
+
+# ---------- gas en water ----------
+
+def gaswater(cfg):
+    """Tarief voor gas en water uit [gaswater]; bedragen in EUR."""
+    f = lambda k, d=0.0: ec.cfg_float(cfg, "gaswater", k, d)
+    return {
+        "gas_incl": ec.cfg_str(cfg, "gaswater", "gas_bedragen", "excl") == "incl",
+        "gas_btw": f("gas_btw_procent", 6.0),
+        "gas_kwh_m3": f("gas_kwh_m3", 11.2),
+        "gas_energie": f("gas_energie_eur_kwh"),
+        "gas_net": f("gas_net_eur_kwh"),
+        "gas_vast": f("gas_vast_eur_jaar"),
+        "water_m3": f("water_eur_m3"),
+        "water_vast": f("water_vast_eur_jaar"),
+    }
+
+
+def gas_ingevuld(t):
+    return bool(t["gas_energie"] or t["gas_net"])
+
+
+def water_ingevuld(t):
+    return bool(t["water_m3"])
+
+
+def kosten_gas(m3, dagen, t):
+    """Kosten (EUR, incl. btw) van m3 gas plus 'dagen' vaste kosten. None als het tarief niet ingevuld is."""
+    if m3 is None or not gas_ingevuld(t):
+        return None
+    k = m3 * t["gas_kwh_m3"] * (t["gas_energie"] + t["gas_net"]) + t["gas_vast"] * dagen / 365
+    return round(k if t["gas_incl"] else k * (1 + t["gas_btw"] / 100), 2)
+
+
+def kosten_water(m3, dagen, t):
+    """Kosten (EUR, incl. btw) van m3 water plus 'dagen' vaste kosten. None als het tarief niet ingevuld is."""
+    if m3 is None or not water_ingevuld(t):
+        return None
+    return round(m3 * t["water_m3"] + t["water_vast"] * dagen / 365, 2)

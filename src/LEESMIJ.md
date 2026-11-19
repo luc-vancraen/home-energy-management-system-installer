@@ -18,6 +18,8 @@ geen cloud, geen AI-platform nodig na de installatie).
 - **Dashboard** op `http://<ip-van-de-pc>:8080`: live vermogen, kwartierbudget,
   maandpiek, dagtotalen en kosten, grafiek, kwartiertabel, marktprijzen en
   CSV-export.
+- **Tabletweergave** op `http://<ip-van-de-pc>:8080/tablet`: donker, groot, voor een
+  tablet aan de muur (live stroom, kwartierbudget, prijzen, kosten, dagverloop).
 - **Dagrapport** (HTML) elke ochtend over gisteren, met oordeel OK/AANDACHT,
   top-5 kwartierpieken en grafiek; optioneel per mail.
 - **Marktprijzen** dagelijks ophalen als een provider-API geconfigureerd is
@@ -59,6 +61,19 @@ die het dashboard opent in de browser.
 Handige opties: `--dir MAP`, `--meter-url URL`, `--provider-url URL`,
 `--poort N`, `--demo`, `--geen-services`, `--geen-snelkoppeling`, `--force`, `--help`.
 
+### Zonder services (`--geen-services` of geen systemd)
+
+Dan start niets vanzelf. Start de twee programma's met de hand, elk in een eigen
+terminal (of via je eigen opstartmechanisme):
+
+```
+cd ~/hems-systeem && python3 app/ems_meterd.py --config config/ems.ini      # metingen
+cd ~/hems-systeem && python3 app/ems_dashboard.py --config config/ems.ini   # dashboard
+```
+
+Marktprijzen ophalen (normaal 3 keer per dag): `python3 app/ems_prijzen.py --config config/ems.ini`.
+Het dagrapport: `python3 app/ems_rapport.py --config config/ems.ini`.
+
 ## Instellingen in het dashboard
 
 Open `http://<ip-van-de-pc>:8080/instellingen` (of klik op "instellingen" bovenaan
@@ -82,6 +97,39 @@ Dit systeem meet alleen. Wil je later je batterij, laadpaal of warmtepomp laten 
 dat bouwen met het HEMS-template. Open in Instellingen het onderdeel **Later sturing met AI** en vul de vragenlijst
 in. Het systeem maakt daarvan `mijn-installatie.md` in deze map. Geef dat bestand samen met het template aan de
 assistent: die vraagt dan enkel nog wat ontbreekt, en bouwt verder op dit meetsysteem zonder het te wijzigen.
+
+## Tabletweergave en kaarten op de tablet
+
+Open `http://<ip-van-de-pc>:8080/tablet` op een tablet of oud scherm (knop rechtsboven = volledig scherm;
+zet "scherm uit" op de tablet op nooit). Je ziet de live stroom, het kwartierbudget met de pieken van de maand,
+de marktprijzen, wat vandaag gebeurde tegenover gisteren, het weer met de zoninstraling en het verloop van vandaag.
+Weer uitzetten: Instellingen > Dashboard.
+
+Zon, thuisbatterij, auto, warmtepomp ... meet dit systeem niet zelf. Een ander programma (bv. een module die je
+met de AI bouwt) kan ze wel op de tablet zetten door per toestel een klein JSON-bestand te schrijven in
+`data/tablet/` in de projectmap. Toestellen die in je vragenlijst staan maar nog geen kaart hebben, verschijnen als
+"nog niet gekoppeld". Een kaart met `stroom_w` komt ook in het stroomschema bovenaan.
+Een eigen foto (bv. van je auto) laad je op bij Instellingen > Dashboard > "Foto's voor de tablet".
+
+```
+Een kaart = één bestand data/tablet/<naam>.json (UTF-8, hoogstens 20 kB), bv.:
+{
+  "titel": "Auto",                 verplicht
+  "soort": "auto",                 auto | batterij | zon | laadpaal | warmtepomp | boiler | stekker | ander
+  "volgorde": 10,                  kleiner = eerder (standaard 50)
+  "status": "ok",                  ok | let | fout | uit | info   (kleur van het bolletje)
+  "statustekst": "laadt",          korte toestand naast het bolletje
+  "waarde": "72", "eenheid": "%", "label": "batterij",     het grote getal
+  "balk": 72,                      0..100, optioneel (laadtoestand)
+  "regels": [["Bereik", "288 km"], ["Laadstroom", "16 A"]],
+  "stroom_w": -3680,               optioneel: toont het toestel in het stroomschema
+                                   (+ = levert aan het huis, - = neemt van het huis)
+  "bijgewerkt": "2026-11-19T10:00:00Z",   UTC; zonder dit telt de wijzigingstijd van het bestand
+  "geldig_s": 300                  daarna toont de tablet 'verouderd' (standaard 300 s)
+}
+Schrijf eerst naar een tijdelijk bestand en hernoem het dan (os.replace), zodat de
+tablet nooit een half bestand leest.
+```
 
 ## Dagelijks gebruik
 

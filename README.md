@@ -23,6 +23,10 @@ Het systeem **meet en rapporteert alleen**: het schrijft nooit naar een toestel.
   tariefkaart vergelijkt.
 - **Dagrapport** elke ochtend, optioneel per mail.
 - **Marktprijzen** (day-ahead) via ENTSO-E (gratis token) of EnergyZero.
+- **Tabletweergave** op `/tablet`: een donkere pagina voor een tablet aan de muur, met de energiestroom, het
+  lopende kwartier, marktprijzen, weer en zonprognose, gas en water, en kaarten (met eigen foto) voor zon,
+  batterij of auto die andere programma's aanleveren.
+- **Gas en water** uit dezelfde digitale meter, met je gas- en watertarief: verbruik en kosten van vandaag en deze maand.
 - **Pagina Instellingen**: meter zoeken met één klik, contract, gemeente, mail, wachtwoord. Geen configuratiebestanden
   bewerken.
 
@@ -56,6 +60,15 @@ programmabestanden komen in `backup/`.
 
 **Verwijderen**: `bash ~/hems-systeem/verwijder.sh` (met `--alles` ook je metingen).
 
+## Verder bouwen met AI: de starter
+
+Wil je daarna ook sturen (batterij, laadpaal, ...)? Download **`hems-bouwen-met-ai.sh`** van dezelfde release en
+start het met `bash hems-bouwen-met-ai.sh`. Het installeert een AI-agent naar keuze (Claude Code, OpenAI Codex CLI,
+Gemini CLI of Kimi Code), haalt de laatste [template](https://github.com/luc-vancraen/home-energy-management-system-template)
+op, maakt een projectmap `~/hems-ai` en zet een knop **HEMS bouwen met AI** in het menu. De AI leest eerst je
+antwoorden uit de vragenlijst (`~/hems-systeem/mijn-installatie.md`) en bouwt dan samen met jou, stap voor stap.
+Je hebt een account nodig bij de aanbieder van de AI die je kiest.
+
 ## Goed om te weten
 
 - De **Fluvius-tarieven** gelden voor 2026. Elk jaar komt er een nieuwe versie met de nieuwe tarieven; het
@@ -68,6 +81,7 @@ programmabestanden komen in `backup/`.
 
 - `installer-kop.sh`: het installatiescript (vensters, menu's, services).
 - `src/`: het programma zelf (Python 3, alleen de standaardbibliotheek) en de handleiding `LEESMIJ.md`.
+- `starter/hems-bouwen-met-ai.sh`: de starter om verder te bouwen met een AI-agent.
 - `bouw.py`: voegt alles samen tot één bestand `uit/hems-systeem-install.sh` met sha256-controle per bestand.
 
 ## Licentie
@@ -82,11 +96,13 @@ met je echte factuur.
 A simple home energy monitoring system for a Linux PC, installable **without AI and without terminal skills**.
 It reads your digital meter through a local P1 dongle (HomeWizard P1, local API v1), stores the readings and shows
 them on a web dashboard with costs like on your bill, quarter-hour peaks (Flemish capacity tariff) and a daily
-report. It only measures and reports, never controls a device, and runs fully local.
+report, plus a wall-tablet view (`/tablet`) and gas and water usage and costs. It only measures and reports,
+never controls a device, and runs fully local.
 
 Download `hems-systeem-install.sh` from the latest release and run `bash hems-systeem-install.sh`: on a desktop
 it uses windows (zenity), on a server menus (whiptail). Then open the Settings page to find your meter and enter your
 contract and municipality. The user interface is in Dutch; grid tariffs are built in for Flanders (Fluvius 2026).
 
-Prefer to build a tailored system with an AI assistant? Use the
+To go further with an AI agent, run `hems-bouwen-met-ai.sh` from the same release: it installs an agent of your
+choice, fetches the template and adds a "HEMS bouwen met AI" button. Or use the
 [template](https://github.com/luc-vancraen/home-energy-management-system-template). Licence: MIT.

@@ -83,6 +83,9 @@ def secties():
               "opties": [["", "— kies —"], ["eigenaar", "Eigenaar"], ["huurder", "Huurder"],
                          ["mede-eigenaar", "Mede-eigenaar (appartement, VME)"]],
               "hulp": "Huurders en mede-eigenaars hebben voor panelen, batterijen of een laadpaal vaak toestemming nodig."},
+             {"id": "personen", "type": "tekst", "label": "Hoeveel personen zijn er gedomicilieerd?", "plaats": "bv. 2",
+              "hulp": "Helpt het verbruik in te schatten. Voor water telt het ook mee: in Vlaanderen betaal je het "
+                      "basistarief voor 30 m³ per woning plus 30 m³ per gedomicilieerde, daarboven het dubbele."},
              {"id": "oude_regeling", "type": "keuze", "label": "Heb je nog een oude regeling?",
               "opties": [["", "— kies —"], ["geen", "Nee"], ["terugdraaiende teller", "Terugdraaiende teller"],
                          ["prosumententarief", "Prosumententarief"], ["weet niet", "Weet ik niet"]]},
@@ -392,7 +395,8 @@ def _bekend(cfg, db_pad):
         rij.append("Contract: " + {"enkel": "vaste prijs", "dagnacht": "dag/nacht", "variabel": "variabel (maandindex)",
                                    "dynamisch": "dynamisch (marktprijs per kwartier/uur)",
                                    "blok": "vast blok kWh + daarboven variabel"}.get(soort, soort)
-                   + (f", leverancier {lev}" if lev else ""))
+                   + (f", leverancier {lev}" if lev else ", leverancier niet ingevuld"))
+        rij += ["  - " + r for r in _contract_details(cfg)]
     try:
         db = sqlite3.connect(f"file:{db_pad}?mode=ro", uri=True, timeout=5)
         r = db.execute("SELECT meter_maandpiek_w, ts FROM metingen WHERE meter_maandpiek_w IS NOT NULL "
@@ -411,6 +415,71 @@ def _bekend(cfg, db_pad):
     return rij
 
 
+def _getal(x, dec=4):
+    """Getal in lokale notatie, zonder overbodige nullen (0,0900 -> 0,09)."""
+    t = f"{x:.{dec}f}"
+    if "." in t:
+        t = t.rstrip("0").rstrip(".")
+    return t.replace(".", ",")
+
+
+def _contract_details(cfg):
+    """De bedragen van het contract zoals ingevuld op de pagina Instellingen (geen geheimen)."""
+    def g(k):
+        v = ec.cfg_str(cfg, "tarief", k)
+        try:
+            return float(v.replace(",", ".")) if v != "" else None
+        except ValueError:
+            return None
+    ct = lambda k: None if g(k) is None else _getal(g(k) * 100, 5) + " c€/kWh"
+    soort = ec.cfg_str(cfg, "tarief", "soort")
+    incl = ec.cfg_str(cfg, "tarief", "bedragen", "excl") == "incl"
+    uit = [f"Bedragen ingevuld {'inclusief' if incl else 'exclusief'} btw"
+           + (f" (btw {_getal(g('btw_procent'), 2)} %)" if g("btw_procent") is not None else "")]
+    formule = lambda: (f"{_getal(g('formule_factor') or 1, 4)} × maandindex + "
+                       f"{_getal(g('formule_toeslag_eur_mwh') or 0, 3)} €/MWh")
+    if soort in ("enkel", "dagnacht"):
+        if soort == "enkel":
+            uit.append(f"Energieprijs: {ct('dag_eur_kwh') or 'niet ingevuld'}")
+        else:
+            uit.append(f"Dag {ct('dag_eur_kwh') or '?'}, nacht {ct('nacht_eur_kwh') or '?'}; dag van "
+                       f"{ec.cfg_str(cfg, 'tarief', 'dag_start_uur', '7')} tot {ec.cfg_str(cfg, 'tarief', 'dag_einde_uur', '22')} u, "
+                       f"weekend als nacht: {ec.cfg_str(cfg, 'tarief', 'weekend_als_nacht', 'ja')}")
+    elif soort == "variabel":
+        uit.append(f"Energieprijs: {formule()}")
+    elif soort == "dynamisch":
+        uit.append(f"Energieprijs: {formule().replace('maandindex', 'marktprijs')}")
+    elif soort == "blok":
+        uit.append(f"Blok: {_getal(g('blok_kwh_jaar') or 0, 0)} kWh per jaar aan {ct('blok_eur_kwh') or '?'} "
+                   f"(verdeeld over de maanden: {ec.cfg_str(cfg, 'tarief', 'blok_verdeling', 'spp')}, "
+                   f"ongebruikt blok schuift door: {ec.cfg_str(cfg, 'tarief', 'blok_doorschuiven', 'nee')}); "
+                   f"daarboven {formule()}")
+    inj = ec.cfg_str(cfg, "tarief", "injectie_soort", "vast")
+    if inj == "vast":
+        uit.append(f"Injectie: vast {ct('injectie_eur_kwh') or 'niet ingevuld'}")
+    else:
+        t = (f"Injectie: {_getal(g('injectie_factor') or 1, 4)} × "
+             f"{'marktprijs' if inj == 'dynamisch' else 'maandindex'} + {_getal(g('injectie_toeslag_eur_mwh') or 0, 3)} €/MWh")
+        if g("injectie_min_eur_kwh") is not None:
+            t += f", minimum {ct('injectie_min_eur_kwh')}"
+        uit.append(t)
+    net = [(n, ct(k)) for n, k in (("distributie", "distributie_eur_kwh"), ("groenestroom", "groenestroom_eur_kwh"),
+                                    ("WKK", "wkk_eur_kwh"), ("energiebijdrage", "energiebijdrage_eur_kwh"),
+                                    ("accijns", "accijns_eur_kwh"))]
+    if any(v for _, v in net):
+        uit.append("Netkosten en heffingen per kWh: " + ", ".join(f"{n} {v or 'niet ingevuld'}" for n, v in net))
+    vast = []
+    if g("capaciteit_eur_kw_jaar") is not None:
+        vast.append(f"capaciteitstarief {_getal(g('capaciteit_eur_kw_jaar'), 3)} €/kW/jaar")
+    if g("databeheer_eur_jaar") is not None:
+        vast.append(f"databeheer {_getal(g('databeheer_eur_jaar'), 2)} €/jaar")
+    if g("vast_eur_jaar") is not None:
+        vast.append(f"vaste vergoeding leverancier {_getal(g('vast_eur_jaar'), 2)} €/jaar")
+    if vast:
+        uit.append("Vaste kosten: " + ", ".join(vast))
+    return uit
+
+
 def markdown(cfg, cfgpad, db_pad):
     d = lees(cfgpad)
     map_ = os.path.dirname(os.path.dirname(os.path.abspath(cfgpad)))
@@ -421,10 +490,12 @@ def markdown(cfg, cfgpad, db_pad):
            f"Ingevuld met de vragenlijst van het HEMS-meetsysteem op {datetime.now().strftime('%d/%m/%Y %H:%M')}.",
            "Voor de AI-assistent: dit is het overzicht uit fase 1 van het HEMS-template. Lees het eerst, stel enkel "
            "nog vragen over wat hieronder 'niet ingevuld' is of onduidelijk, en laat de gebruiker het geheel bevestigen. "
+           "Wat onder 'Wat het meetsysteem al weet' staat (ook de bedragen van het contract), heeft de gebruiker al "
+           "ingevuld op de pagina Instellingen: vraag dat niet opnieuw. "
            f"Het HEMS-meetsysteem (map {map_}, services hems-systeem-*) meet al: bouw daarop verder en wijzig "
            "de bestanden ervan niet (zie het template, fase 3).", "",
            "## Wat het meetsysteem al weet", ""]
-    uit += [f"- {r}" for r in _bekend(cfg, db_pad)] + [""]
+    uit += [r if r.startswith("  - ") else f"- {r}" for r in _bekend(cfg, db_pad)] + [""]
     for s in secties():
         if s["id"] in ("vl_klaar", "vl_toestellen_zoeken"):
             continue

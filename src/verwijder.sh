@@ -7,7 +7,13 @@ set -euo pipefail
 
 MAP="$(cd "$(dirname "$0")" && pwd)"
 ALLES=0
-[ "${1:-}" = "--alles" ] && ALLES=1
+case "${1:-}" in
+    "")      ;;
+    --alles) ALLES=1 ;;
+    -h|--help) sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *)       echo "Onbekende optie: $1 (gebruik: bash verwijder.sh [--alles]). Er is niets verwijderd." >&2; exit 1 ;;
+esac
+[ $# -le 1 ] || { echo "Te veel opties. Er is niets verwijderd." >&2; exit 1; }
 
 echo "Services stoppen en uitschakelen ..."
 # Enkel units die bij DEZE projectmap horen (ExecStart wijst naar $MAP/app/): hems-systeem-* (sinds 1.1) en de

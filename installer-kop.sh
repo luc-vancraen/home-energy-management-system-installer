@@ -29,7 +29,7 @@ if [ -z "${BASH_VERSION:-}" ]; then
 fi
 set -euo pipefail
 
-VERSIE="1.2.0"
+VERSIE="1.3.0"
 STANDAARD_DIR="$HOME/hems-systeem"
 ENERGYZERO="https://api.energyzero.nl/v1/energyprices"
 
@@ -43,6 +43,7 @@ BESTANDEN=(
     app/ems_kosten.py
     app/ems_netgebieden.py
     app/ems_vragenlijst.py
+    app/ems_tablet.py
     config/ems.ini.example
     icoon/hems.png
     LEESMIJ.md
@@ -700,17 +701,32 @@ ${C_OK}Installatie klaar.${C_OFF}
 
   Dashboard:     http://$IP:$POORT
   Instellingen:  http://$IP:$POORT/instellingen
+  Tablet:        http://$IP:$POORT/tablet   (weergave voor een wandtablet)
 $( [ -n "$INSTELCODE" ] && echo "  Instelcode:    $INSTELCODE   (eenmalig: hiermee kies je je beheerwachtwoord)" )
   Projectmap:    $DEST
   Configuratie:  $CONFIG
   Handleiding:   $DEST/LEESMIJ.md
 $( [ "$SNELKOPPELING_OK" -eq 1 ] && echo "  Snelkoppeling:  'HEMS Dashboard' $waar" )
+EOF
+if [ "$GEEN_SERVICES" -eq 0 ]; then
+    cat <<EOF
 
 Handige commando's:
-  journalctl -u hems-systeem-meter -f                      # live logboek van de metingen
+  journalctl -u hems-systeem-meter -f                               # live logboek van de metingen
   systemctl status hems-systeem-meter hems-systeem-dashboard        # status van de services
-  bash $DEST/verwijder.sh                         # alles stoppen en verwijderen
+  bash $DEST/verwijder.sh                                           # alles stoppen en verwijderen
 EOF
+else
+    cat <<EOF
+
+Er zijn geen services geïnstalleerd (--geen-services of geen systemd): het systeem
+start niet vanzelf. Starten met de hand, elk in een eigen terminal:
+  cd $DEST && python3 app/ems_meterd.py --config $CONFIG
+  cd $DEST && python3 app/ems_dashboard.py --config $CONFIG
+Meer uitleg (ook marktprijzen en rapport): $DEST/LEESMIJ.md
+EOF
+fi
+[ "$DEMO" -eq 1 ] && echo
 [ "$DEMO" -eq 1 ] && cat <<EOF
 Demo-modus is aan (het dashboard toont een rode DEMO-balk). Voor echte metingen:
 open Instellingen (adres hierboven), klik op "Zoek mijn meter", dan "Test" en "Opslaan".

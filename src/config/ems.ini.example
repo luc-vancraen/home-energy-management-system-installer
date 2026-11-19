@@ -78,6 +78,24 @@ bind = 0.0.0.0
 # Wachtwoord voor het dashboard (leeg = geen wachtwoord; enkel op je eigen thuisnetwerk gebruiken)
 wachtwoord =
 
+[gaswater]
+# Eenvoudigst: invullen in het dashboard (Instellingen -> Gas en water). Leeg = geen kosten tonen.
+# Gas: prijzen per kWh zoals op de factuur (bedragen excl of incl btw), omrekening m3 -> kWh van de factuur
+gas_bedragen = excl
+gas_energie_eur_kwh =
+gas_net_eur_kwh =
+gas_vast_eur_jaar =
+gas_kwh_m3 = 11.2
+gas_btw_procent = 6
+# Water: prijs per m3 en vaste kosten per jaar, alles samen en met btw
+water_eur_m3 =
+water_vast_eur_jaar =
+[tablet]
+# Tabletweergave (/tablet): weer en zonprognose via Open-Meteo (gratis, zonder account)
+weer = ja
+# Leeg = ligging van de gemeente bij [tarief]; of zelf invullen, bv. 51.05 en 3.72
+breedte =
+lengte =
 [rapport]
 map = rapporten
 # Het dagrapport wordt gemaakt door een systemd-timer (standaard elke ochtend 06:05).

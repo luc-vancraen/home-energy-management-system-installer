@@ -28,6 +28,7 @@ import ems_common as ec
 import ems_instellingen as ei
 import ems_vragenlijst as ev
 import ems_kosten
+import ems_tablet
 
 CFG = None
 CFG_PAD = None
@@ -215,6 +216,7 @@ def dag_pagina(datum):
     h.append(f"<p class='nav'><a href='/dag/{gister}'>&larr; {gister.strftime('%d/%m')}</a>"
              f"<a href='/'>vandaag</a>"
              f"<a href='/dag/{morgen}'>{morgen.strftime('%d/%m')} &rarr;</a>"
+             f"<a href='/tablet'>tabletweergave</a>"
              f"<a href='/rapporten'>rapporten</a>"
              f"<a href='/dag/{datum}.csv'>CSV van deze dag</a>"
              f"<a href='/instellingen'>instellingen</a></p>")
@@ -451,6 +453,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if not pad.startswith("/instellingen/") or not self._zelfde_oorsprong():
                 return self._stuur("niet toegelaten", code=403)
+            if pad == "/instellingen/foto":
+                return self._post_foto()
             data = self._lees_body()
             if pad == "/instellingen/eerste":
                 return self._post_eerste(data)
@@ -487,6 +491,8 @@ class Handler(BaseHTTPRequestHandler):
             if pad == "/instellingen/maandindex":
                 r = ei.maandindex_opslaan(data, DB_PAD)
                 return self._json(r)
+            if pad == "/instellingen/foto-weg":
+                return self._json(ems_tablet.verwijder_foto(CFG_PAD, str(data.get("soort", ""))))
             if pad == "/instellingen/mailtest":
                 return self._json(ei.mailtest(CFG, CFG_PAD))
             if pad == "/instellingen/wachtwoord":
@@ -495,6 +501,18 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             print(f"fout bij {pad}: {e}", file=sys.stderr)
             return self._json({"ok": False, "fout": f"interne fout: {e}"}, 500)
+
+    def _post_foto(self):
+        """Foto voor de tablet (rauwe JPEG, al verkleind in de browser); enkel aangemeld met CSRF-token."""
+        s = self._sessie()
+        if not s or not hmac.compare_digest(str(self.headers.get("X-HEMS-CSRF", "")), s[1]):
+            return self._json({"ok": False, "fout": "Niet aangemeld of sessie verlopen."}, 401)
+        n = int(self.headers.get("Content-Length") or 0)
+        if n <= 0 or n > ems_tablet.FOTO_MAX:
+            return self._json({"ok": False, "fout": "De foto is leeg of groter dan 3 MB."}, 413)
+        data = self.rfile.read(n)
+        soort = parse_qs(urlparse(self.path).query).get("soort", [""])[0]
+        return self._json(ems_tablet.bewaar_foto(CFG_PAD, soort, data))
 
     def _post_eerste(self, data):
         if beheer_hash():
@@ -616,6 +634,30 @@ class Handler(BaseHTTPRequestHandler):
                 self._stuur(dag_pagina(ec.utc_nu().astimezone(TZ).date()))
             elif pad == "/api/now":
                 self._stuur(json.dumps(status_json()), "application/json")
+            elif pad == "/tablet":
+                self._stuur(ems_tablet.pagina(TZ))
+            elif pad.startswith("/tablet/foto/"):
+                f = ems_tablet.foto_bestand(CFG_PAD, pad[len("/tablet/foto/"):])
+                if not f:
+                    return self._stuur("niet gevonden", code=404)
+                with open(f[0], "rb") as fh:
+                    inhoud = fh.read()
+                self.send_response(200)
+                self.send_header("Content-Type", f[1])
+                self.send_header("Content-Length", str(len(inhoud)))
+                self.send_header("Cache-Control", "max-age=86400")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.end_headers()
+                self.wfile.write(inhoud)
+            elif pad == "/api/tablet/kaarten":
+                self._stuur(json.dumps(ems_tablet.kaarten_data(CFG_PAD)), "application/json")
+            elif pad == "/api/tablet":
+                conn = db()
+                try:
+                    d = ems_tablet.data(conn, CFG, CFG_PAD, TZ, maand_tot_nu, tarief_ingevuld())
+                finally:
+                    conn.close()
+                self._stuur(json.dumps(d), "application/json")
             elif pad == "/rapporten":
                 self._stuur(rapporten_lijst())
             elif pad.startswith("/rapporten/"):
