@@ -130,6 +130,11 @@ def haal(cfg, cfgpad, dagen=2):
             raise
         except Exception:
             pass
+        if e.code >= 500:                          # 5xx, ook 599 van de ENTSO-E-gateway: storing bij de bron
+            naam = "ENTSO-E" if "entsoe" in url_basis.lower() else "de bron"
+            raise ValueError(f"{naam} is tijdelijk niet bereikbaar (storing aan hun kant, fout {e.code}). "
+                             "Dat ligt niet aan je instellingen of je token: die zijn bewaard. Probeer later "
+                             "opnieuw; de prijzen worden ook vanzelf opnieuw opgehaald.") from e
         raise ValueError(f"de bron antwoordt met fout {e.code}") from e
     if data.lstrip()[:1] in (b"{", b"["):
         return parse_json_prijzen(data), "json"

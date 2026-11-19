@@ -1,5 +1,11 @@
 # Wijzigingen
 
+## 1.3.2 (19 november 2026)
+
+- Marktprijzen: bij een storing bij de bron (fout 5xx, bv. "fout 599" van ENTSO-E) zegt de melding nu dat de bron
+  tijdelijk onbereikbaar is en dat het niet aan je token of instellingen ligt, in plaats van enkel "fout 599".
+- README: stap voor stap installeren op een nieuwe Debian met bureaublad (ook in het Engels).
+
 ## 1.3.1 (19 november 2026)
 
 - **Oogje** naast elk wachtwoordveld (beheerwachtwoord, kijkwachtwoord, mailwachtwoord, ENTSO-E-token, aanmelden):

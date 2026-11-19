@@ -80,6 +80,36 @@ Zonder meter kan je het systeem eerst verkennen in de demo-modus.
 Het dashboard staat daarna op `http://<ip-van-de-pc>:8080`. Op een pc met bureaublad komt er een knop
 **HEMS Dashboard** in het menu (bij GNOME ook in het dock).
 
+### Stap voor stap op een nieuwe Debian (met bureaublad)
+
+Je hebt alleen `hems-systeem-install.sh` nodig: geen git, geen `bouw.py`, geen extra pakketten (python3, zenity en de
+andere hulpprogramma's zitten standaard in Debian 13 met GNOME).
+
+1. **Debian installeren**: kies een bureaublad (bv. GNOME) en **laat het root-wachtwoord leeg**. Dan krijgt je eigen
+   gebruiker sudo-rechten, nodig om de services vanzelf te laten starten.
+2. **Downloaden**: open Firefox, ga naar de
+   [laatste release](https://github.com/luc-vancraen/home-energy-management-system-installer/releases/latest) en
+   klik op `hems-systeem-install.sh` (het komt in de map Downloads).
+3. **Starten**: druk op de Windows-toets, typ **Terminal**, open het en typ
+   `bash ~/Downloads/hems-systeem-install.sh` + Enter. Dit is de enige keer dat je de terminal nodig hebt (een
+   `.sh`-bestand dubbelklikken start het in GNOME niet). Daarna gaat alles met vensters: welkom, je wachtwoord,
+   voortgangsbalk, en op het einde opent Firefox de pagina Instellingen met de instelcode al ingevuld.
+4. **Instellen in de browser**: kies een beheerwachtwoord, klik op **Zoek mijn meter**, dan **Test** en **Opslaan**,
+   en vul je contract en gemeente in. Daarna staat **HEMS Dashboard** in het menu en in het dock, en start het
+   systeem vanzelf na elke herstart.
+
+Toch een root-wachtwoord gekozen bij het installeren van Debian? Geef je gebruiker dan eerst één keer
+sudo-rechten in de terminal, en meld daarna af en opnieuw aan:
+
+```
+su -
+apt install sudo
+usermod -aG sudo JOUWGEBRUIKERSNAAM
+exit
+```
+
+Zonder die stap installeert de installer ook, maar zonder services: dan start je alles met de hand.
+
 **Bijwerken**: download de nieuwe versie en start ze opnieuw. Je instellingen en metingen blijven bewaard; vorige
 programmabestanden komen in `backup/`.
 
@@ -127,6 +157,27 @@ never controls a device, and runs fully local.
 Download `hems-systeem-install.sh` from the latest release and run `bash hems-systeem-install.sh`: on a desktop
 it uses windows (zenity), on a server menus (whiptail). Then open the Settings page to find your meter and enter your
 contract and municipality. The user interface is in Dutch; grid tariffs are built in for Flanders (Fluvius 2026).
+
+**Step by step on a fresh Debian (with desktop)**
+
+You only need `hems-systeem-install.sh`: no git, no `bouw.py`, no extra packages (python3, zenity and the other tools
+are standard in Debian 13 with GNOME).
+
+1. *Install Debian*: choose a desktop (e.g. GNOME) and **leave the root password empty**, so your own user gets sudo
+   rights (needed for the services to start automatically).
+2. *Download*: in Firefox open the
+   [latest release](https://github.com/luc-vancraen/home-energy-management-system-installer/releases/latest) and
+   click `hems-systeem-install.sh` (it lands in Downloads).
+3. *Start*: press the Windows key, type **Terminal**, open it and type `bash ~/Downloads/hems-systeem-install.sh` +
+   Enter. That is the only time you need the terminal (double-clicking a `.sh` file does not run it in GNOME). Then
+   everything goes through windows, and at the end Firefox opens the Settings page with the setup code filled in.
+4. *Set up in the browser*: choose an admin password, click **Zoek mijn meter** (find my meter), then **Test** and
+   **Opslaan** (save), and enter your contract and municipality. **HEMS Dashboard** then appears in the menu and
+   dock, and the system starts by itself after every reboot.
+
+Chose a root password when installing Debian? Then first give your user sudo rights once (`su -`,
+`apt install sudo`, `usermod -aG sudo YOURUSERNAME`, `exit`) and log out and in again. Without that step the
+installer still works, but without services: you then start everything by hand.
 
 **What you need**
 
