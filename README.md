@@ -139,6 +139,12 @@ Je hebt een account nodig bij de aanbieder van de AI die je kiest.
 - `starter/hems-bouwen-met-ai.sh`: de starter om verder te bouwen met een AI-agent.
 - `bouw.py`: voegt alles samen tot één bestand `uit/hems-systeem-install.sh` met sha256-controle per bestand.
 
+**Heb ik `bouw.py` nodig?** Nee. Als gebruiker download je alleen `hems-systeem-install.sh` bij de
+[laatste release](https://github.com/luc-vancraen/home-energy-management-system-installer/releases/latest): daarin
+zit alles al. `bouw.py` is enkel voor wie de broncode wil nakijken of zelf aanpassen. Met `python3 bouw.py` maak je
+uit `installer-kop.sh` en `src/` zelf het installatiebestand, zodat je kunt controleren dat het overeenkomt met de
+broncode, of je eigen aangepaste versie kunt bouwen.
+
 ## Licentie
 
 MIT, zie [LICENSE](LICENSE). Copyright (c) 2026 luc-vancraen. Zonder enige garantie: controleer je kosten altijd
@@ -201,3 +207,8 @@ installer still works, but without services: you then start everything by hand.
 To go further with an AI agent, run `hems-bouwen-met-ai.sh` from the same release: it installs an agent of your
 choice, fetches the template and adds a "HEMS bouwen met AI" button. Or use the
 [template](https://github.com/luc-vancraen/home-energy-management-system-template). Licence: MIT.
+
+**Do I need `bouw.py`?** No. As a user you only download `hems-systeem-install.sh` from the latest release: it
+contains everything. `bouw.py` is only for people who want to check or modify the source: `python3 bouw.py` builds
+the installer file from `installer-kop.sh` and `src/` (`installer-kop.sh` is the installer logic, `src/` the
+program), so you can verify it matches the source or build your own modified version.
