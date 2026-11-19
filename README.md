@@ -32,13 +32,38 @@ Het systeem **meet en rapporteert alleen**: het schrijft nooit naar een toestel.
 
 ## Wat heb je nodig
 
-- Een pc met **Linux** en systemd, met of zonder bureaublad, die aan blijft staan. Getest op Debian 13 (GNOME);
-  andere gangbare distributies (Ubuntu, Linux Mint, ...) met python3 ≥ 3.9 zouden moeten werken.
-- Een **digitale meter** met geactiveerde gegevenspoort (in Vlaanderen via "Mijn Fluvius").
-- Een **HomeWizard P1 Meter** (of compatibele dongle) met de **lokale API** aangezet in de HomeWizard-app.
-- Liefst een vast IP-adres voor de dongle in je router.
+**Om te meten**
+- Een **digitale meter** met geactiveerde gegevenspoort (in Vlaanderen gratis via "Mijn Fluvius").
+- Een **HomeWizard P1 Meter** (of een dongle met hetzelfde formaat) aan die poort, met de **lokale API** aangezet
+  in de HomeWizard-app.
+- Liefst een vast IP-adres voor de dongle in je router (niet verplicht: "Zoek mijn meter" vindt hem ook zo).
 
 Zonder meter kan je het systeem eerst verkennen in de demo-modus.
+
+**De computer**
+- **Linux**, met of zonder bureaublad. Getest op Debian 13 (GNOME); andere gangbare distributies (Ubuntu,
+  Linux Mint, Raspberry Pi OS, ...) zouden moeten werken.
+- **python3 ≥ 3.9** met sqlite3 en tzdata. Dat zit standaard in gangbare distributies; ontbreekt het, dan installeert
+  de installer het via apt. Geen extra Python-pakketten, geen Docker, geen cloud.
+- Weinig vermogen nodig: samen ongeveer 70 MB geheugen en zo'n 400 MB schijfruimte per jaar aan metingen. Een oude
+  laptop, een mini-pc of een Raspberry Pi volstaat.
+- De pc blijft **aan staan** en zit in **hetzelfde thuisnetwerk** als de P1-dongle.
+
+**Rechten**
+- Een gebruiker met **sudo-wachtwoord**, zodat de services vanzelf starten. Dat is het enige moment dat de installer
+  om een wachtwoord vraagt.
+- Zonder sudo of zonder systemd (bv. WSL) lukt de installatie ook (of met `--geen-services`), maar dan start je de
+  twee programma's met de hand. Het slotoverzicht en `LEESMIJ.md` zeggen hoe.
+
+**Kennis**
+- Geen terminalkennis: met bureaublad gaat het met vensters, op een server met menu's. Je start één keer
+  `bash hems-systeem-install.sh`; daarna gaat alles via de pagina Instellingen.
+
+**Optioneel**
+- **Internet** voor de marktprijzen, het weer op de tablet en de mail met het dagrapport. Het meten zelf werkt zonder.
+- Een gratis **ENTSO-E-token** voor de marktprijzen (zonder token: EnergyZero).
+- Een **tablet of oud scherm** met een browser voor de tabletweergave.
+- Voor de starter **HEMS bouwen met AI**: internet en een account bij de aanbieder van de AI die je kiest.
 
 ## Installeren
 
@@ -102,6 +127,25 @@ never controls a device, and runs fully local.
 Download `hems-systeem-install.sh` from the latest release and run `bash hems-systeem-install.sh`: on a desktop
 it uses windows (zenity), on a server menus (whiptail). Then open the Settings page to find your meter and enter your
 contract and municipality. The user interface is in Dutch; grid tariffs are built in for Flanders (Fluvius 2026).
+
+**What you need**
+
+- *To measure*: a digital meter with its data port enabled (in Flanders free via "Mijn Fluvius") and a HomeWizard P1
+  Meter (or a dongle with the same format) with the **local API** enabled in the HomeWizard app. A fixed IP address
+  for the dongle is nice but not required. Without a meter you can explore the demo mode first.
+- *The computer*: **Linux**, with or without a desktop (tested on Debian 13 GNOME; Ubuntu, Linux Mint, Raspberry Pi
+  OS, ... should work), **python3 ≥ 3.9** with sqlite3 and tzdata (standard in common distributions; installed via apt
+  if missing). No extra Python packages, no Docker, no cloud. About 70 MB of memory and roughly 400 MB of disk per
+  year of readings: an old laptop, a mini PC or a Raspberry Pi is enough. It stays on, in the same home network as
+  the P1 dongle.
+- *Rights*: a user with a **sudo password**, so the services start automatically (the only time the installer asks
+  for a password). Without sudo or systemd (e.g. WSL), or with `--geen-services`, it still installs, but you start
+  the two programs by hand; the end summary and `LEESMIJ.md` explain how.
+- *Skills*: no terminal skills: windows on a desktop, menus on a server. You run `bash hems-systeem-install.sh` once;
+  everything else is done on the Settings page.
+- *Optional*: internet for market prices, the weather on the tablet and the daily report by mail (measuring works
+  without); a free ENTSO-E token for market prices (otherwise EnergyZero); a tablet or old screen with a browser for
+  the tablet view; for the AI starter: internet and an account with the AI provider you choose.
 
 To go further with an AI agent, run `hems-bouwen-met-ai.sh` from the same release: it installs an agent of your
 choice, fetches the template and adds a "HEMS bouwen met AI" button. Or use the
