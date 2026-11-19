@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ems_rapport - maakt het dagelijkse rapport (HTML), ruimt oude ruwe data op
+"""ems_rapport - maakt het dagelijkse rapport (HTML), een back-up van de metingen, ruimt oude ruwe data op
 en kan het rapport per mail sturen (als [mail] aan = ja in de config).
 
 Conclusie staat bovenaan in één zin ("OK" of "AANDACHT" met de reden).
@@ -24,7 +24,7 @@ def beoordeel(totalen, kwartieren, spanning_min, budget_w, verwacht, interval):
     return ("OK", "Geen bijzonderheden.") if not redenen else ("AANDACHT", "; ".join(redenen) + ".")
 
 
-def maak_rapport(cfgpad, datum):
+def maak_rapport(cfgpad, datum, backup_melding=None):
     cfg = ec.laad_config(cfgpad)
     tz = ec.tijdzone(cfg)
     db_pad = ec.db_pad(cfgpad, cfg)
@@ -84,6 +84,9 @@ def maak_rapport(cfgpad, datum):
                  f"(min {ec.komma(prijzen[2]*100,2)}, max {ec.komma(prijzen[3]*100,2)}), kale marktprijs zonder netkosten en heffingen.</p>")
     h.append("<h2>Grafiek</h2>")
     h.append(ec.svg_grafiek(punten, f"Vermogen op {datum_nl}", tz=tz) if punten else "<p>Geen metingen.</p>")
+    if backup_melding:
+        fout = "LET OP" in backup_melding or backup_melding.startswith("back-up mislukt")
+        h.append(f"<p class='{'fout' if fout else 'ok'}'>Back-up van de metingen: {__import__('html').escape(backup_melding)}.</p>")
     h.append(f"<p style='color:#777;font-size:.85em'>Volledigheid: {totalen['metingen']} van ca. {verwacht} metingen. "
              "Kosten volgens je contract in Instellingen; vergelijk af en toe met je echte factuur. "
              "Dit systeem meet enkel en stuurt niets.</p></body></html>")
@@ -126,7 +129,12 @@ def main():
         datum = datetime.strptime(args.datum, "%Y-%m-%d").date()
     else:
         datum = (ec.utc_nu().astimezone(tz) - timedelta(days=1)).date()
-    html, oordeel, datum_nl, _ = maak_rapport(args.config, datum)
+    try:
+        backup = ec.backup_db(args.config, cfg)
+    except Exception as e:
+        backup = f"back-up mislukt: {e}"
+    print(backup, file=sys.stderr if "mislukt" in backup else sys.stdout)
+    html, oordeel, datum_nl, _ = maak_rapport(args.config, datum, backup)
     verstuur_mail(cfg, args.config, html, f"HEMS dagrapport {datum_nl}: {oordeel}")
     return 0
 

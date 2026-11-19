@@ -213,6 +213,13 @@ def dag_pagina(datum):
     if ec.demo_actief(CFG):
         h.append("<p class='fout' style='padding:8px'><strong>DEMO-MODUS:</strong> dit zijn gesimuleerde metingen, "
                  "niet die van je meter. Stel je meter in via <a href='/instellingen'>Instellingen</a>.</p>")
+    nieuw = ec.nieuwe_versie(CFG)
+    if nieuw:
+        h.append(f"<p class='nieuwversie' style='padding:8px;background:#e8f1fa;border:1px solid #0072B2;border-radius:6px'>"
+                 f"<strong>Er is een nieuwe versie: {html.escape(nieuw)}</strong> (je hebt {html.escape(ec.versie())}). "
+                 f"Bijwerken: download <b>hems-systeem-install.sh</b> van de <a href='{ec.RELEASES_URL}' "
+                 "target='_blank' rel='noopener'>laatste release</a> en start het opnieuw, zoals bij de installatie. "
+                 "Je instellingen en metingen blijven bewaard.</p>")
     h.append(f"<p class='nav'><a href='/dag/{gister}'>&larr; {gister.strftime('%d/%m')}</a>"
              f"<a href='/'>vandaag</a>"
              f"<a href='/dag/{morgen}'>{morgen.strftime('%d/%m')} &rarr;</a>"
@@ -281,7 +288,8 @@ tick();setInterval(tick,5000);setTimeout(()=>location.reload(),300000);
         h.append("</table>")
     h.append("<p class='voet'>HEMS-meetsysteem — alleen meten, geen sturing. Tijden in lokale tijd; "
              "opslag in UTC. Kleuren zijn kleurenblindveilig; de stippellijn is 0 W.</p>"
-             "<p class='voet'>Copyright (c) 2026 luc-vancraen</p></body></html>")
+             f"<p class='voet'>HEMS-meetsysteem versie {html.escape(ec.versie())} · Copyright (c) 2026 luc-vancraen</p>"
+             "</body></html>")
     return "".join(h)
 
 
@@ -311,7 +319,7 @@ def rapporten_lijst():
         h.append("<p>Nog geen rapporten. De rapporttimer maakt er elke ochtend een.</p>")
     for f in bestanden:
         h.append(f"<p><a href='/rapporten/{f}'>{f[:-5]}</a></p>")
-    h.append("<p class='voet'>Copyright (c) 2026 luc-vancraen</p></body></html>")
+    h.append(f"<p class='voet'>HEMS-meetsysteem versie {html.escape(ec.versie())} · Copyright (c) 2026 luc-vancraen</p></body></html>")
     return "".join(h)
 
 
@@ -347,8 +355,8 @@ def _pagina(titel, inhoud):
             f"<style>{STIJL}</style></head><body><h1>{titel}</h1>"
             "<p class='nav'><a href='/'>&larr; dashboard</a></p>"
             f"{inhoud}<p class='voet'>HEMS-meetsysteem — Instellingen wijzigen alleen de eigen "
-            "configuratie van dit systeem, nooit een toestel. Copyright (c) 2026 luc-vancraen</p>"
-            f"{ec.OOGJE}</body></html>")
+            f"configuratie van dit systeem, nooit een toestel. Versie {html.escape(ec.versie())} · "
+            f"Copyright (c) 2026 luc-vancraen</p>{ec.OOGJE}</body></html>")
 
 
 def eerste_keer_pagina(code="", fout=""):

@@ -1,5 +1,20 @@
 # Wijzigingen
 
+## 1.4.0 (19 november 2026)
+
+- **Versie zichtbaar**: onderaan het dashboard, de rapportenlijst en Instellingen staat de geïnstalleerde versie
+  (de installer schrijft ze in het bestand `VERSIE`).
+- **Melding bij een nieuwe versie**: het dashboard kijkt hoogstens één keer per dag op GitHub of er een nieuwere
+  release is en toont dan bovenaan hoe je bijwerkt. Enkel melden, nooit zelf bijwerken; er gaat niets van jou mee.
+  Uit te zetten bij Instellingen > Algemeen (`[update] controleren`).
+- **Elke ochtend een back-up van je metingen**: samen met het dagrapport een gecomprimeerde kopie van de databank
+  in `backup-db/` (de laatste 7), veilig terwijl het systeem meet. Optioneel ook naar een USB-stick of netwerkmap
+  (Instellingen > Algemeen, `[opslag] backup_map`). Het dagrapport zegt of het gelukt is; terugzetten staat in LEESMIJ.
+- Vragenlijst, stap **Toestellen zoeken**: korte uitleg in 3 stappen en de knoppen **Klaar** en **Opslaan en verder**,
+  zoals bij de andere stappen (de gebruiker wist niet hoe verder te gaan).
+- README: rubriek **Problemen?** met de meest gestelde vragen (meter niet gevonden, fout 599, dubbelklikken op
+  `.sh`, dashboard niet op gsm, wachtwoord vergeten, kosten anders dan factuur, `bouw.py`), ook kort in het Engels.
+
 ## 1.3.2 (19 november 2026)
 
 - Marktprijzen: bij een storing bij de bron (fout 5xx, bv. "fout 599" van ENTSO-E) zegt de melding nu dat de bron

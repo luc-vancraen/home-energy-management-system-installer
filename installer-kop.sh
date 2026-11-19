@@ -29,7 +29,7 @@ if [ -z "${BASH_VERSION:-}" ]; then
 fi
 set -euo pipefail
 
-VERSIE="1.3.2"
+VERSIE="1.4.0"
 STANDAARD_DIR="$HOME/hems-systeem"
 ENERGYZERO="https://api.energyzero.nl/v1/energyprices"
 
@@ -403,6 +403,7 @@ while [ "$i" -lt "${#BESTANDEN[@]}" ]; do
     i=$((i + 1))
 done
 chmod +x "$DEST/verwijder.sh"
+echo "$VERSIE" > "$DEST/VERSIE"           # het dashboard toont dit en vergelijkt het met de laatste release
 # Oude .bak-bestanden van vroegere versies (naast de programma's) mee naar backup/ verhuizen.
 for oudbak in "$DEST"/app/*.bak.* "$DEST"/*.md.bak.* "$DEST"/verwijder.sh.bak.* "$DEST"/icoon/*.bak.* \
               "$DEST"/config/ems.ini.example.bak.*; do

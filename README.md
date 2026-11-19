@@ -27,6 +27,8 @@ Het systeem **meet en rapporteert alleen**: het schrijft nooit naar een toestel.
   lopende kwartier, marktprijzen, weer en zonprognose, gas en water, en kaarten (met eigen foto) voor zon,
   batterij of auto die andere programma's aanleveren.
 - **Gas en water** uit dezelfde digitale meter, met je gas- en watertarief: verbruik en kosten van vandaag en deze maand.
+- **Elke ochtend een back-up** van je metingen (de laatste 7 dagen), optioneel ook naar een USB-stick of netwerkmap.
+- **Melding bij een nieuwe versie** bovenaan het dashboard; de geïnstalleerde versie staat onderaan.
 - **Pagina Instellingen**: meter zoeken met één klik, contract, gemeente, mail, wachtwoord. Geen configuratiebestanden
   bewerken.
 
@@ -110,8 +112,8 @@ exit
 
 Zonder die stap installeert de installer ook, maar zonder services: dan start je alles met de hand.
 
-**Bijwerken**: download de nieuwe versie en start ze opnieuw. Je instellingen en metingen blijven bewaard; vorige
-programmabestanden komen in `backup/`.
+**Bijwerken**: het dashboard meldt bovenaan wanneer er een nieuwe versie is. Download die en start ze opnieuw, net
+zoals bij de installatie. Je instellingen en metingen blijven bewaard; vorige programmabestanden komen in `backup/`.
 
 **Verwijderen**: `bash ~/hems-systeem/verwijder.sh` (met `--alles` ook je metingen).
 
@@ -123,6 +125,47 @@ Gemini CLI of Kimi Code), haalt de laatste [template](https://github.com/luc-van
 op, maakt een projectmap `~/hems-ai` en zet een knop **HEMS bouwen met AI** in het menu. De AI leest eerst je
 antwoorden uit de vragenlijst (`~/hems-systeem/mijn-installatie.md`) en bouwt dan samen met jou, stap voor stap.
 Je hebt een account nodig bij de aanbieder van de AI die je kiest.
+
+## Problemen?
+
+**"Zoek mijn meter" vindt niets**
+- Staat de **lokale API** aan? In de HomeWizard-app: Instellingen > Meters > je P1-meter > Lokale API.
+- Zitten de pc en de P1-dongle in **hetzelfde netwerk**? Niet op het gastennetwerk van de wifi, en niet achter een
+  aparte router of repeater met een eigen netwerk.
+- Lukt het nog niet: zoek het IP-adres van de dongle in je router of in de HomeWizard-app en vul bij Instellingen >
+  Meter zelf `http://IP-ADRES/api/v1/data` in.
+
+**Marktprijzen: "fout 599" of "tijdelijk niet bereikbaar"**
+- Dat is een storing bij ENTSO-E zelf, niet bij jou. Je token en instellingen zijn bewaard; de prijzen worden later
+  vanzelf opnieuw opgehaald. Zegt de melding "weigert de toegang", dan klopt het token niet: kopieer het opnieuw uit je ENTSO-E-account.
+
+**Een `.sh`-bestand dubbelklikken doet niets**
+- Klopt, dat start GNOME niet. Open een terminal en typ `bash ~/Downloads/hems-systeem-install.sh`
+  (zie de stappen hierboven).
+
+**De installer zegt dat er geen sudo is, of de services niet starten**
+- Je gebruiker heeft geen sudo-rechten. Zie hierboven ("Toch een root-wachtwoord gekozen?"), of start de programma's
+  met de hand zoals het slotoverzicht toont.
+
+**Het dashboard opent niet op mijn gsm of tablet**
+- Gebruik het IP-adres van de pc, niet `localhost`: bv. `http://192.168.1.20:8080`. Het adres staat in het
+  slotoverzicht van de installer.
+- Bij Instellingen > Dashboard moet "Bereikbaar vanaf" op **het hele thuisnetwerk** staan.
+- Staat er een firewall aan op de pc (bv. `ufw`)? Laat dan de poort van het dashboard toe vanuit je thuisnetwerk.
+
+**Beheerwachtwoord vergeten**
+- Verwijder de regel `HEMS_BEHEER_WACHTWOORD` uit `~/hems-systeem/.env` en kies een nieuw wachtwoord met de
+  instelcode uit `~/hems-systeem/config/instelcode`.
+
+**De kosten verschillen van mijn factuur**
+- Kijk bij Instellingen > Contract en tarief of alles ingevuld is (ook netkosten, heffingen en vaste kosten), en of
+  je gemeente juist staat. Een voorschotfactuur is een schatting; vergelijk met een afrekening.
+
+**Heb ik `bouw.py` nodig?**
+- Nee, zie hieronder bij "Opbouw van deze repository".
+
+Staat je probleem er niet bij? Open een
+[issue](https://github.com/luc-vancraen/home-energy-management-system-installer/issues).
 
 ## Goed om te weten
 
@@ -207,6 +250,22 @@ installer still works, but without services: you then start everything by hand.
 To go further with an AI agent, run `hems-bouwen-met-ai.sh` from the same release: it installs an agent of your
 choice, fetches the template and adds a "HEMS bouwen met AI" button. Or use the
 [template](https://github.com/luc-vancraen/home-energy-management-system-template). Licence: MIT.
+
+**Problems?**
+- *"Zoek mijn meter" finds nothing*: enable the **local API** in the HomeWizard app, and make sure the PC and the
+  dongle are on the same network (not the guest Wi-Fi). Otherwise enter `http://DONGLE-IP/api/v1/data` yourself.
+- *Market prices: "fout 599" / temporarily unavailable*: an outage at ENTSO-E itself; your token is kept and prices
+  are fetched again later.
+- *Double-clicking the `.sh` file does nothing*: GNOME does not run it; use `bash ~/Downloads/hems-systeem-install.sh`
+  in a terminal.
+- *Dashboard does not open on a phone or tablet*: use the PC's IP address (not `localhost`), set "Bereikbaar vanaf"
+  to the whole home network, and allow the port in a firewall if you have one.
+- *Admin password forgotten*: remove `HEMS_BEHEER_WACHTWOORD` from `~/hems-systeem/.env` and choose a new one with
+  the code in `~/hems-systeem/config/instelcode`.
+
+**Updates and backups**: the dashboard shows the installed version and, at most once a day, checks GitHub for a
+newer release (only a notice; you update yourself, can be turned off). Every morning a compressed backup of your
+readings goes to `~/hems-systeem/backup-db/` (last 7 days), optionally also to a USB stick or network folder.
 
 **Do I need `bouw.py`?** No. As a user you only download `hems-systeem-install.sh` from the latest release: it
 contains everything. `bouw.py` is only for people who want to check or modify the source: `python3 bouw.py` builds

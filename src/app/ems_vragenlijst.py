@@ -549,7 +549,18 @@ window.EXTRA={
    try{const j=await post('/instellingen/vl-zoek',{});toon(j.toestellen||[]);D.waarden.vl_toestellen_zoeken={gevonden:j.toestellen||[]};
     D.overzicht=j.overzicht||D.overzicht;nav();meld('uit',true,(j.toestellen||[]).length+' toestel(len) gevonden. Ze staan nu ook in het bestand.')}
    catch(e){meld('uit',false,'Zoeken mislukt.')}finally{k.disabled=false}}},'🔎 Zoek toestellen');
-  p.append(maak('div',{class:'knoppen'},k),lijst,maak('div',{class:'melding',id:'uit'}));c.append(p)},
+  const stappen=maak('ol',{class:'intro'},maak('li',{html:'Klik op <b>Zoek toestellen</b> en wacht ongeveer 10 seconden.'}),
+   maak('li',{},'Kijk of de lijst klopt. Niets gevonden, of heb je zulke toestellen niet? Dat is geen probleem.'),
+   maak('li',{html:'Klik op <b>Opslaan en verder</b>. Wat gevonden is, komt in je bestand mijn-installatie.md.'}));
+  const klaar=verder=>{const n=((D.waarden.vl_toestellen_zoeken||{}).gevonden||[]).length;
+   const gezocht=!!D.waarden.vl_toestellen_zoeken;
+   const tekst=gezocht?(n?'Opgeslagen: '+n+' toestel(len) staan in je bestand.':'Opgeslagen: er zijn geen toestellen gevonden, dat is geen probleem.')
+    :'Je hebt niet gezocht; dat mag. Je kan dit later nog doen.';
+   if(verder){ga(volgende(actief));meld('uit',true,tekst)}else meld('uit',true,tekst)};
+  p.append(stappen,maak('div',{class:'knoppen'},k),lijst,
+   maak('div',{class:'knoppen'},maak('button',{type:'button',class:'hoofd',onclick:()=>klaar(false)},'✔ Klaar'),
+    maak('button',{type:'button',onclick:()=>klaar(true)},'Opslaan en verder →')),
+   maak('div',{class:'melding',id:'uit'}));c.append(p)},
  vl_klaar:async c=>{const p=maak('div',{class:'paneel'},maak('h2',{},'📄 Klaar: het bestand'),
   maak('p',{class:'intro',html:'Alles wat je invulde, staat in <b>mijn-installatie.md</b> (in je projectmap: <code>'+D.uitvoer+'</code>). '+
    'Zo ga je verder met een AI-assistent:'}),

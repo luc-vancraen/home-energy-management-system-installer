@@ -140,6 +140,31 @@ tablet nooit een half bestand leest.
 - Een meting testen: `python3 ~/hems-systeem/app/ems_meterd.py --config ~/hems-systeem/config/ems.ini --eenmalig`
 - Rapport nu maken: `python3 ~/hems-systeem/app/ems_rapport.py --config ~/hems-systeem/config/ems.ini`
 
+## Bijwerken
+
+Het dashboard toont onderaan de geïnstalleerde versie en meldt bovenaan als er een nieuwere is (het kijkt
+hoogstens één keer per dag op GitHub; uit te zetten bij Instellingen > Algemeen). Bijwerken: download
+`hems-systeem-install.sh` van de laatste release en start het opnieuw. Je instellingen en metingen blijven
+bewaard; de vorige programmabestanden komen in `backup/`.
+
+## Back-up van je metingen
+
+Elke ochtend maakt het systeem, samen met het dagrapport, een gecomprimeerde kopie van de databank in
+`~/hems-systeem/backup-db/` (bv. `ems-2026-11-20.db.gz`). De laatste 7 blijven bewaard. Dat kan veilig terwijl het
+systeem meet. Bij Instellingen > Algemeen kan je een tweede map opgeven (USB-stick of netwerkmap): dan komt daar
+ook een kopie, in de submap `hems-backup`. Het dagrapport zegt of de back-up gelukt is.
+
+Een back-up terugzetten (bv. op een nieuwe pc, na een nieuwe installatie):
+
+```bash
+sudo systemctl stop hems-systeem-meter hems-systeem-dashboard
+gunzip -c ems-2026-11-20.db.gz > ~/hems-systeem/data/ems.db
+rm -f ~/hems-systeem/data/ems.db-wal ~/hems-systeem/data/ems.db-shm
+sudo systemctl start hems-systeem-meter hems-systeem-dashboard
+```
+
+Je instellingen staan apart in `config/ems.ini` en `.env`; kopieer die mee als je naar een andere pc verhuist.
+
 ## Tarieven invullen
 
 Zet in `config/ems.ini` onder `[tarief]` je echte contractprijzen, anders zijn de

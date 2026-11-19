@@ -8,6 +8,7 @@ voor de eigenaar). Er wordt nooit naar een toestel geschreven.
 """
 import html
 import json
+import os
 import re
 import smtplib
 import urllib.error
@@ -274,6 +275,19 @@ def schema(cfg):
              {"id": "tijdzone", "type": "keuze", "label": "Tijdzone",
               "opties": [[z, z.replace("_", " ")] for z in _tijdzones(tz)],
               "hulp": "Bepaalt de uren op het dashboard en de grenzen van dagen en dagtarief."},
+             {"id": "updates", "type": "vink", "label": "Melden als er een nieuwe versie is",
+              "hulp": "Het dashboard kijkt hoogstens één keer per dag op GitHub of er een nieuwere versie is en "
+                      "toont dan bovenaan een melding. Er gaat niets van jou mee, alleen de vraag welke versie de "
+                      "laatste is. Bijwerken doe je zelf."},
+             {"id": "backup_map", "type": "tekst", "label": "Extra kopie van de back-up naar (optioneel)",
+              "plaats": "bv. /media/jan/USB-STICK of /mnt/nas/hems",
+              "hulp": "Elke ochtend maakt het systeem een back-up van je metingen in de map backup-db van het "
+                      "project (de laatste 7 dagen). Vul hier een map in op een USB-stick of netwerkschijf: dan komt "
+                      "er ook een kopie, zodat je metingen bewaard blijven als de schijf van deze pc stukgaat. "
+                      "Leeg = enkel op deze pc."},
+             {"id": "i_versie", "type": "info",
+              "label": f"Geïnstalleerde versie: {ec.versie()}. Bijwerken: download hems-systeem-install.sh van de "
+                       "laatste release op GitHub en start het opnieuw; je instellingen en metingen blijven bewaard."},
          ]},
         {"id": "ai", "titel": "Later sturing met AI", "icoon": "🤖", "velden": []},
         {"id": "wachtwoord", "titel": "Beheerwachtwoord", "icoon": "🔑"},
@@ -335,7 +349,9 @@ def waarden(cfg, cfgpad):
                       "poort": str(ec.cfg_int(cfg, "dashboard", "poort", 8080)),
                       "bind": ec.cfg_str(cfg, "dashboard", "bind", "0.0.0.0"),
                       "weer": ec.cfg_bool(cfg, "tablet", "weer", True)},
-        "algemeen": {"tijdzone": ec.cfg_str(cfg, "algemeen", "tijdzone", "Europe/Brussels")},
+        "algemeen": {"tijdzone": ec.cfg_str(cfg, "algemeen", "tijdzone", "Europe/Brussels"),
+                     "updates": ec.cfg_bool(cfg, "update", "controleren", True),
+                     "backup_map": ec.cfg_str(cfg, "opslag", "backup_map")},
     }
 
 
@@ -464,7 +480,12 @@ def overzicht(cfg, cfgpad, db_pad):
     waar = "alleen deze pc" if d["bind"] == "127.0.0.1" else "thuisnetwerk"
     zet("dashboard", "ok" if d["beveiligen"] else "opt",
         ("Met wachtwoord" if d["beveiligen"] else "Zonder wachtwoord") + f" · {waar} · poort {d['poort']}")
-    zet("algemeen", "ok", w["algemeen"]["tijdzone"])
+    lb = ec.laatste_backup(cfgpad)
+    bk = f"back-up {lb[8:]}/{lb[5:7]}" if lb else "nog geen back-up (komt morgenochtend)"
+    nieuw = ec.nieuwe_versie(cfg)
+    zet("algemeen", "let" if nieuw else "ok",
+        f"Versie {ec.versie()}" + (f" (nieuwe versie {nieuw} beschikbaar)" if nieuw else "")
+        + f" · {bk} · {w['algemeen']['tijdzone']}")
     return uit
 
 
@@ -723,7 +744,17 @@ def _opslaan(sectie, w, cfg, cfgpad, db_pad):
             raise Fout("Onbekende tijdzone.")
         if "/" not in tz or any(c.isspace() for c in tz):
             raise Fout("Onbekende tijdzone.")
-        ec.zet_config(cfgpad, {("algemeen", "tijdzone"): tz})
+        bmap = str(w.get("backup_map", "")).strip()
+        if bmap:
+            if any(c in bmap for c in "\r\n\0") or not os.path.isabs(bmap):
+                raise Fout("Geef de back-upmap als volledig pad, beginnend met / (bv. /media/jan/USB-STICK).")
+            if not os.path.isdir(bmap):
+                raise Fout(f"De map {bmap} bestaat niet. Zit de USB-stick erin of is de netwerkmap gekoppeld?")
+            if not os.access(bmap, os.W_OK):
+                raise Fout(f"Het systeem mag niet schrijven in {bmap}.")
+        ec.zet_config(cfgpad, {("algemeen", "tijdzone"): tz,
+                               ("update", "controleren"): "ja" if w.get("updates") else "nee",
+                               ("opslag", "backup_map"): bmap})
 
     else:
         raise Fout("Onbekend onderdeel.")
@@ -1095,7 +1126,7 @@ def pagina(csrf, cfg, cfgpad, db_pad, stijl_basis):
             "<noscript><p class='melding fout'>Deze pagina heeft JavaScript nodig.</p></noscript>"
             "<div class='indeling'><nav class='zij' id='zij'></nav><main class='inhoud' id='inhoud'></main></div>"
             "<p class='voet'>Instellingen wijzigen alleen de eigen configuratie van dit meetsysteem (met back-up), "
-            "nooit een toestel. Copyright (c) 2026 luc-vancraen</p>"
+            f"nooit een toestel. Versie {ec.versie()} · Copyright (c) 2026 luc-vancraen</p>"
             f"<script>const INIT={init};{_JS}</script>{ec.OOGJE}</body></html>")
 
 

@@ -112,3 +112,11 @@ naar =
 [opslag]
 db_pad = data/ems.db
 bewaar_ruwe_dagen = 730
+# Elke ochtend (met het dagrapport) een gecomprimeerde back-up van de databank in backup-db/; zoveel blijven er:
+backup_aantal = 7
+# Optioneel ook een kopie naar een andere schijf (USB-stick, netwerkmap), volledig pad. Leeg = enkel backup-db/.
+backup_map =
+
+[update]
+# Hoogstens één keer per dag op GitHub kijken of er een nieuwere versie is (enkel melden, nooit zelf bijwerken)
+controleren = ja

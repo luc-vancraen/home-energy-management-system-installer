@@ -15,6 +15,7 @@ import secrets
 import shutil
 import socket
 import sqlite3
+import threading
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -721,6 +722,125 @@ def svg_grafiek(punten, titel, tz=None, breedte=920, hoogte=280):
 
 # Oogje naast elk wachtwoordveld (wachtwoorden, tokens, API-sleutels): tonen/verbergen.
 # Werkt ook voor velden die later door JavaScript gemaakt worden.
+# ---------- versie en updates ----------
+
+RELEASES_URL = "https://github.com/luc-vancraen/home-energy-management-system-installer/releases/latest"
+
+
+def versie():
+    """Geïnstalleerde versie: het bestand VERSIE dat de installer in de projectmap schrijft."""
+    pad = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "VERSIE")
+    try:
+        with open(pad, encoding="utf-8") as f:
+            v = f.read().strip()
+        return v if re.fullmatch(r"\d+(\.\d+){1,3}", v) else "onbekend"
+    except OSError:
+        return "onbekend"
+
+
+def _versie_tuple(v):
+    return tuple(int(x) for x in v.split(".")) if re.fullmatch(r"\d+(\.\d+){1,3}", v or "") else None
+
+
+_UPDATE = {"tijd": 0.0, "nieuwste": None, "bezig": False}
+_UPDATE_SLOT = threading.Lock()
+
+
+def _haal_nieuwste():
+    try:
+        # De pagina 'latest' stuurt door naar .../releases/tag/vX.Y.Z: zo is geen GitHub-API (en geen limiet) nodig.
+        verzoek = urllib.request.Request(RELEASES_URL, method="HEAD", headers={"User-Agent": "hems-meting/1.0"})
+        with urllib.request.urlopen(verzoek, timeout=15) as r:
+            m = re.search(r"/tag/v?(\d+(?:\.\d+){1,3})$", r.geturl())
+        nieuwste = m.group(1) if m else None
+    except Exception:
+        nieuwste = None                          # geen internet of GitHub onbereikbaar: gewoon niets tonen
+    with _UPDATE_SLOT:
+        _UPDATE.update(tijd=__import__("time").time(), bezig=False,
+                       nieuwste=nieuwste or _UPDATE["nieuwste"])
+
+
+def nieuwe_versie(cfg):
+    """Geeft de nieuwere versie op GitHub terug (bv. "1.4.0"), of None. Blokkeert nooit: het opzoeken gebeurt
+    hoogstens één keer per dag op de achtergrond; uit te zetten met [update] controleren = nee."""
+    if not cfg_bool(cfg, "update", "controleren", True):
+        return None
+    import time as _t
+    with _UPDATE_SLOT:
+        if not _UPDATE["bezig"] and _t.time() - _UPDATE["tijd"] > 86400:
+            _UPDATE["bezig"] = True
+            threading.Thread(target=_haal_nieuwste, daemon=True).start()
+        nieuwste = _UPDATE["nieuwste"]
+    hier, daar = _versie_tuple(versie()), _versie_tuple(nieuwste)
+    return nieuwste if hier and daar and daar > hier else None
+
+
+# ---------- back-up van de metingen ----------
+
+def backup_db(cfgpad, cfg, aantal=None):
+    """Maakt een gecomprimeerde kopie van de databank in backup-db/ (de laatste 'aantal' blijven, standaard 7)
+    en zet ze, als [opslag] backup_map ingevuld is, ook in die map (bv. een USB-stick of netwerkmap).
+    Veilig terwijl het systeem meet (SQLite-backup). Geeft een korte melding terug."""
+    import gzip
+    if demo_actief(cfg):
+        return "geen back-up: demo-modus"
+    bron = db_pad(cfgpad, cfg)
+    if not os.path.isfile(bron):
+        return "geen back-up: nog geen databank"
+    aantal = aantal or max(cfg_int(cfg, "opslag", "backup_aantal", 7), 1)
+    doel_map = pad_in_project(cfgpad, "backup-db")
+    os.makedirs(doel_map, exist_ok=True)
+    naam = "ems-" + utc_nu().strftime("%Y-%m-%d") + ".db.gz"
+    tmp_db = os.path.join(doel_map, ".bezig.db")
+    tmp_gz = os.path.join(doel_map, ".bezig.db.gz")
+    try:
+        s = sqlite3.connect(f"file:{bron}?mode=ro", uri=True, timeout=30)
+        d = sqlite3.connect(tmp_db)
+        with d:
+            s.backup(d)
+        d.close()
+        s.close()
+        with open(tmp_db, "rb") as a, gzip.open(tmp_gz, "wb", compresslevel=6) as b:
+            shutil.copyfileobj(a, b, 1 << 20)
+        os.replace(tmp_gz, os.path.join(doel_map, naam))
+    finally:
+        for f in (tmp_db, tmp_gz):
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+    oud = sorted(f for f in os.listdir(doel_map) if re.fullmatch(r"ems-\d{4}-\d{2}-\d{2}\.db\.gz", f))
+    for f in oud[:-aantal]:
+        os.remove(os.path.join(doel_map, f))
+    melding = f"back-up {naam} gemaakt in {doel_map}"
+    extra = cfg_str(cfg, "opslag", "backup_map")
+    if extra:
+        try:
+            if not os.path.isdir(extra):
+                raise OSError("map niet gevonden (zit de USB-stick erin, is de netwerkmap gekoppeld?)")
+            sub = os.path.join(extra, "hems-backup")
+            os.makedirs(sub, exist_ok=True)
+            shutil.copy2(os.path.join(doel_map, naam), os.path.join(sub, naam + ".bezig"))
+            os.replace(os.path.join(sub, naam + ".bezig"), os.path.join(sub, naam))
+            oud = sorted(f for f in os.listdir(sub) if re.fullmatch(r"ems-\d{4}-\d{2}-\d{2}\.db\.gz", f))
+            for f in oud[:-aantal]:
+                os.remove(os.path.join(sub, f))
+            melding += f", kopie in {sub}"
+        except OSError as e:
+            melding += f"; LET OP: kopie naar {extra} mislukt: {e}"
+    return melding
+
+
+def laatste_backup(cfgpad):
+    """Datum (JJJJ-MM-DD) van de nieuwste back-up in backup-db/, of None."""
+    try:
+        f = sorted(f for f in os.listdir(pad_in_project(cfgpad, "backup-db"))
+                   if re.fullmatch(r"ems-\d{4}-\d{2}-\d{2}\.db\.gz", f))
+    except OSError:
+        return None
+    return f[-1][4:14] if f else None
+
+
 OOGJE = ("<style>.oogvak{display:flex;gap:6px;align-items:stretch;max-width:620px}"
          ".oogvak>input{flex:1;min-width:0;max-width:none!important;margin:0}"
          ".oogvak>button.oog{margin:0;padding:0 12px;font-size:1.1em;line-height:1;min-width:46px}</style>"
