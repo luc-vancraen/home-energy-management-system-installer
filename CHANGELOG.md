@@ -1,5 +1,17 @@
 # Wijzigingen
 
+## 1.2.0 (18 november 2026)
+
+- Nieuw: vragenlijst **Mijn installatie** (Instellingen → "Later sturing met AI"), voor wie later met een
+  AI-assistent sturing wil laten bouwen volgens het HEMS-template. De vragen volgen blok A tot I van het template
+  (doelen, aansluiting, zon, batterij, auto, toestellen, machine, weergave). Wat het systeem al weet (meter, fasen,
+  gemeente, netbeheerder, contract, maandpiek), vult het zelf in.
+- De antwoorden komen in `mijn-installatie.md` in de projectmap, te downloaden vanaf de pagina. De AI-assistent leest
+  dat bestand en vraagt enkel nog wat ontbreekt.
+- Toestellen zoeken op het thuisnetwerk (alleen lezen): HomeWizard, go-e Charger, Shelly. Thuisbatterijen worden
+  bewust niet aangesproken (veel batterijen aanvaarden maar één verbinding).
+- Het meetsysteem zelf verandert er niet door en stuurt nog altijd niets.
+
 ## 1.1.0 (18 november 2026)
 
 - Eigen servicenamen: `hems-systeem-meter`, `hems-systeem-dashboard`, `hems-systeem-prijzen` en `hems-systeem-rapport`

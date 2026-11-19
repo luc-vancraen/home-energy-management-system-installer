@@ -76,6 +76,13 @@ het dashboard).
   regel `HEMS_BEHEER_WACHTWOORD` uit `.env` en kies een nieuw wachtwoord met de
   instelcode uit `config/instelcode`.
 
+## Later sturing met AI: vragenlijst "Mijn installatie"
+
+Dit systeem meet alleen. Wil je later je batterij, laadpaal of warmtepomp laten sturen, dan kan een AI-assistent
+dat bouwen met het HEMS-template. Open in Instellingen het onderdeel **Later sturing met AI** en vul de vragenlijst
+in. Het systeem maakt daarvan `mijn-installatie.md` in deze map. Geef dat bestand samen met het template aan de
+assistent: die vraagt dan enkel nog wat ontbreekt, en bouwt verder op dit meetsysteem zonder het te wijzigen.
+
 ## Dagelijks gebruik
 
 - Dashboard: `http://<ip-van-de-pc>:8080`

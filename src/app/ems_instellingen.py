@@ -239,6 +239,7 @@ def schema(cfg):
               "opties": [[z, z.replace("_", " ")] for z in _tijdzones(tz)],
               "hulp": "Bepaalt de uren op het dashboard en de grenzen van dagen en dagtarief."},
          ]},
+        {"id": "ai", "titel": "Later sturing met AI", "icoon": "🤖", "velden": []},
         {"id": "wachtwoord", "titel": "Beheerwachtwoord", "icoon": "🔑"},
     ]
 
@@ -798,6 +799,9 @@ body.kiosk{max-width:1180px;font-size:17px}
 .okaart .t{font-weight:bold}.okaart .s{font-size:.9em;color:#444}
 .welkom{background:#eef6fb;border:1px solid #0072B2;border-radius:10px;padding:12px 16px;margin-bottom:12px}
 .gewijzigd{color:#B35900;font-size:.9em;margin-left:6px}
+.kiosk a.knop{display:inline-block;padding:10px 18px;border:1px solid #888;border-radius:6px;text-decoration:none;color:#222;background:#f4f4f4}
+.kiosk a.knop.hoofd{background:#0072B2;color:#fff;border-color:#0072B2}
+.kiosk pre.md{white-space:pre-wrap;background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;font-size:.85em;max-height:520px;overflow:auto}
 .kop h3{margin:22px 0 2px;font-size:1.1em;border-bottom:1px solid #ddd;padding-bottom:4px}
 .inhoud table{font-size:.95em}.inhoud td input{padding:6px!important}
 @media(max-width:760px){.indeling{grid-template-columns:1fr}
@@ -828,8 +832,9 @@ function nav(){const z=$('zij');z.innerHTML='';
 function ga(id){if(actief&&gewijzigd[actief]&&id!==actief&&!confirm('Je wijzigingen in "'+S[actief].titel+'" zijn nog niet opgeslagen. Toch verdergaan?'))return;
  if(actief&&id!==actief)delete gewijzigd[actief];
  actief=id;history.replaceState(null,'','#'+id);nav();teken();window.scrollTo(0,0)}
-function volgende(id){const i=D.secties.findIndex(s=>s.id===id);return D.secties[i+1]?D.secties[i+1].id:'overzicht'}
+function volgende(id){const i=D.secties.findIndex(s=>s.id===id);return D.secties[i+1]?D.secties[i+1].id:(S.overzicht?'overzicht':D.secties[0].id)}
 function teken(){const c=$('inhoud');c.innerHTML='';
+ if(window.EXTRA&&EXTRA[actief])return EXTRA[actief](c);
  if(actief==='overzicht')return tekenOverzicht(c);
  if(actief==='wachtwoord')return tekenWachtwoord(c);
  const s=S[actief],w=D.waarden[actief];
@@ -906,7 +911,7 @@ function aanbieder(){if($('v_aanbieder').value==='gmail'){zet('smtp_host','smtp.
 async function bewaar(verder){const s=S[actief],w={};
  for(const v of s.velden)if(v.type!=='kop')w[v.id]=lees(v);
  const k=$('bewaar');k.disabled=true;
- try{const j=await post('/instellingen/opslaan',{sectie:actief,waarden:w});
+ try{const j=await post(D.opslaan_pad||'/instellingen/opslaan',{sectie:actief,waarden:w});
   if(!j.ok){meld('uit',false,j.fout);return}
   D.overzicht=j.overzicht;D.waarden=j.waarden;D.fasen_meter=j.fasen_meter;delete gewijzigd[actief];
   if(j.herstart){meld('uit',true,j.bericht+' Even geduld…');
@@ -967,7 +972,14 @@ function tekenWachtwoord(c){const p=maak('div',{class:'paneel'},maak('h2',{},'�
   maak('div',{class:'melding',id:'uit'}));c.append(p)}
 async function afmelden(){await fetch('/instellingen/afmelden',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'csrf='+encodeURIComponent(CSRF)});location.href='/'}
 window.addEventListener('beforeunload',e=>{if(Object.keys(gewijzigd).length){e.preventDefault();e.returnValue=''}});
-const start=location.hash.slice(1);actief=S[start]?start:'overzicht';nav();teken();
+if(!window.EXTRA)window.EXTRA={};
+if(S.ai&&!EXTRA.ai)EXTRA.ai=c=>{c.append(maak('div',{class:'paneel'},maak('h2',{},'🤖 Later sturing met AI'),
+ maak('p',{class:'intro',html:'Dit systeem <b>meet</b> en stuurt niets. Wil je later ook je batterij, laadpaal of warmtepomp laten sturen, '+
+  'dan kan een AI-assistent dat bouwen met het <a href="https://github.com/luc-vancraen/home-energy-management-system-template" target="_blank" rel="noopener">HEMS-template</a>. '+
+  'Vul eerst de vragenlijst in: wat je antwoordt, komt in het bestand <b>mijn-installatie.md</b> dat je aan de assistent geeft. '+
+  'Dan hoeft die enkel nog te vragen wat ontbreekt.'}),
+ maak('div',{class:'knoppen'},maak('a',{href:'/instellingen/vragenlijst',class:'knop hoofd'},'Vragenlijst "Mijn installatie" openen →'))))};
+const start=location.hash.slice(1);actief=S[start]?start:(S.overzicht?'overzicht':D.secties[0].id);nav();teken();
 """
 
 

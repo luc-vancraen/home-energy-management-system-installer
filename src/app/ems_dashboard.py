@@ -26,6 +26,7 @@ from urllib.parse import parse_qs, urlparse
 
 import ems_common as ec
 import ems_instellingen as ei
+import ems_vragenlijst as ev
 import ems_kosten
 
 CFG = None
@@ -470,6 +471,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(ec.test_meter(str(data.get("url", "")).strip()))
             if pad == "/instellingen/opslaan":
                 return self._json(self._opslaan(data))
+            if pad == "/instellingen/vl-opslaan":
+                r = ev.opslaan(str(data.get("sectie", "")), data.get("waarden"), CFG, CFG_PAD, DB_PAD)
+                r["overzicht"] = ev.overzicht(CFG_PAD)
+                r["waarden"] = ev.waarden(CFG_PAD)
+                return self._json(r)
+            if pad == "/instellingen/vl-zoek":
+                r = ev.zoek_toestellen(CFG, CFG_PAD, DB_PAD)
+                r["overzicht"] = ev.overzicht(CFG_PAD)
+                return self._json(r)
             if pad == "/instellingen/prijstest":
                 r = ei.prijstest(CFG, CFG_PAD)
                 r["overzicht"] = ei.overzicht(CFG, CFG_PAD, DB_PAD)
@@ -590,6 +600,18 @@ class Handler(BaseHTTPRequestHandler):
                 if not s:
                     return self._stuur(aanmeld_pagina())
                 return self._stuur(ei.pagina(s[1], CFG, CFG_PAD, DB_PAD, STIJL))
+            if pad in ("/instellingen/vragenlijst", "/instellingen/vragenlijst/mijn-installatie.md"):
+                s = self._sessie() if beheer_hash() else None
+                if not s:
+                    return self._naar("/instellingen")
+                if pad.endswith(".md"):
+                    try:
+                        with open(ev.uitvoer_pad(CFG_PAD), encoding="utf-8") as f:
+                            tekst = f.read()
+                    except OSError:
+                        tekst = ev.markdown(CFG, CFG_PAD, DB_PAD)
+                    return self._stuur(tekst, "text/markdown; charset=utf-8")
+                return self._stuur(ev.pagina(s[1], CFG, CFG_PAD, DB_PAD, STIJL))
             if pad == "/":
                 self._stuur(dag_pagina(ec.utc_nu().astimezone(TZ).date()))
             elif pad == "/api/now":

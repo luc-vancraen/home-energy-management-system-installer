@@ -29,7 +29,7 @@ if [ -z "${BASH_VERSION:-}" ]; then
 fi
 set -euo pipefail
 
-VERSIE="1.1.0"
+VERSIE="1.2.0"
 STANDAARD_DIR="$HOME/hems-systeem"
 ENERGYZERO="https://api.energyzero.nl/v1/energyprices"
 
@@ -42,6 +42,7 @@ BESTANDEN=(
     app/ems_instellingen.py
     app/ems_kosten.py
     app/ems_netgebieden.py
+    app/ems_vragenlijst.py
     config/ems.ini.example
     icoon/hems.png
     LEESMIJ.md
