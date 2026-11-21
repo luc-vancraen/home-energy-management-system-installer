@@ -29,7 +29,7 @@ if [ -z "${BASH_VERSION:-}" ]; then
 fi
 set -euo pipefail
 
-VERSIE="1.4.0"
+VERSIE="1.4.1"
 STANDAARD_DIR="$HOME/hems-systeem"
 ENERGYZERO="https://api.energyzero.nl/v1/energyprices"
 

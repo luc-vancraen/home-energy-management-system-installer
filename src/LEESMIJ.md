@@ -154,6 +154,29 @@ Elke ochtend maakt het systeem, samen met het dagrapport, een gecomprimeerde kop
 systeem meet. Bij Instellingen > Algemeen kan je een tweede map opgeven (USB-stick of netwerkmap): dan komt daar
 ook een kopie, in de submap `hems-backup`. Het dagrapport zegt of de back-up gelukt is.
 
+### Een NAS als tweede map
+
+Het systeem vraagt geen login of wachtwoord van de NAS: het schrijft enkel naar een map. Laat Linux de NAS dus eerst
+koppelen. Voor een SMB-share (Synology, QNAP, Windows), met je eigen adres, map en gebruiker:
+
+```bash
+sudo apt install cifs-utils
+sudo mkdir -p /mnt/nas
+sudo nano /etc/hems-nas.cred        # twee regels: username=...  en  password=...
+sudo chmod 600 /etc/hems-nas.cred   # alleen root kan het wachtwoord lezen
+id -u                               # je gebruikersnummer, bv. 1000
+```
+
+Voeg dan deze regel toe aan `/etc/fstab` (`sudo nano /etc/fstab`):
+
+```
+//192.168.1.10/backup  /mnt/nas  cifs  credentials=/etc/hems-nas.cred,uid=1000,nofail,_netdev,x-systemd.automount  0  0
+```
+
+Daarna `sudo systemctl daemon-reload` en `ls /mnt/nas` om te testen, en vul bij Instellingen > Algemeen `/mnt/nas`
+in. Maak op de NAS liefst een aparte gebruiker die enkel in die map mag schrijven. Ligt de map op de schijf van deze
+pc zelf (de NAS is niet gekoppeld), dan weigert het systeem ze, zodat je eigen schijf niet ongemerkt volloopt.
+
 Een back-up terugzetten (bv. op een nieuwe pc, na een nieuwe installatie):
 
 ```bash

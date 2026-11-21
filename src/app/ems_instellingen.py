@@ -285,6 +285,17 @@ def schema(cfg):
                       "project (de laatste 7 dagen). Vul hier een map in op een USB-stick of netwerkschijf: dan komt "
                       "er ook een kopie, zodat je metingen bewaard blijven als de schijf van deze pc stukgaat. "
                       "Leeg = enkel op deze pc."},
+             {"id": "i_nas", "type": "info",
+              "label": "Een NAS als back-upmap: het meetsysteem vraagt geen login of wachtwoord van de NAS, het "
+                       "schrijft enkel naar een map. Laat Linux de NAS dus eerst koppelen; het wachtwoord komt dan in "
+                       "een apart bestand dat alleen root kan lezen. Voor een SMB-share (Synology, QNAP, Windows) in "
+                       "een terminal: (1) sudo apt install cifs-utils  (2) sudo mkdir -p /mnt/nas  (3) sudo nano "
+                       "/etc/hems-nas.cred met twee regels: username=... en password=...  (4) sudo chmod 600 "
+                       "/etc/hems-nas.cred  (5) voeg aan /etc/fstab deze regel toe (adres en map aanpassen, uid = "
+                       "uitkomst van id -u): //192.168.1.10/backup /mnt/nas cifs credentials=/etc/hems-nas.cred,"
+                       "uid=1000,nofail,_netdev,x-systemd.automount 0 0  (6) sudo systemctl daemon-reload en "
+                       "ls /mnt/nas om te testen. Vul daarna hierboven /mnt/nas in. Tip: maak op de NAS een aparte "
+                       "gebruiker die enkel in die map mag schrijven."},
              {"id": "i_versie", "type": "info",
               "label": f"Geïnstalleerde versie: {ec.versie()}. Bijwerken: download hems-systeem-install.sh van de "
                        "laatste release op GitHub en start het opnieuw; je instellingen en metingen blijven bewaard."},
@@ -752,6 +763,9 @@ def _opslaan(sectie, w, cfg, cfgpad, db_pad):
                 raise Fout(f"De map {bmap} bestaat niet. Zit de USB-stick erin of is de netwerkmap gekoppeld?")
             if not os.access(bmap, os.W_OK):
                 raise Fout(f"Het systeem mag niet schrijven in {bmap}.")
+            if ec.zelfde_schijf(bmap, cfgpad):
+                raise Fout(f"De map {bmap} ligt op de schijf van deze pc zelf, niet op een USB-stick of NAS. "
+                           "Is de stick of de NAS wel gekoppeld? Zie de uitleg hieronder.")
         ec.zet_config(cfgpad, {("algemeen", "tijdzone"): tz,
                                ("update", "controleren"): "ja" if w.get("updates") else "nee",
                                ("opslag", "backup_map"): bmap})

@@ -1,5 +1,19 @@
 # Wijzigingen
 
+## 1.4.1 (21 november 2026)
+
+- **Back-up naar een NAS**: bij Instellingen > Algemeen staat nu stap voor stap hoe je een NAS (SMB: Synology, QNAP,
+  Windows) door Linux laat koppelen. Het wachtwoord van de NAS komt in een apart bestand dat alleen root kan lezen;
+  het meetsysteem vraagt of bewaart het nooit.
+- Een back-upmap die op de schijf van deze pc zelf ligt, wordt geweigerd (meestal is de NAS of de USB-stick dan niet
+  gekoppeld). Ook de ochtendback-up slaat de extra kopie dan over en meldt het, in plaats van ongemerkt de eigen
+  schijf te vullen.
+- Vragenlijst: kies je bij "Back-up naar" een NAS, dan vraagt ze naar de soort (SMB/NFS), het adres, de gedeelde map
+  en of er een login nodig is (enkel de gebruikersnaam, nooit het wachtwoord). In `mijn-installatie.md` staat dan ook
+  hoe de AI-assistent met dat wachtwoord moet omgaan.
+- Vragenlijst: vragen die pas verschijnen bij meerdere antwoorden samen, worden in `mijn-installatie.md` nu ook
+  correct weggelaten als ze niet van toepassing zijn.
+
 ## 1.4.0 (19 november 2026)
 
 - **Versie zichtbaar**: onderaan het dashboard, de rapportenlijst en Instellingen staat de geïnstalleerde versie

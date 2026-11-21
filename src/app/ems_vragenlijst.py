@@ -212,6 +212,26 @@ def secties():
              {"id": "backup", "type": "keuze", "label": "Back-up naar",
               "opties": [["", "— kies —"], ["nas", "Een NAS"], ["schijf", "Een externe schijf"], ["cloud", "De cloud"],
                          ["nog niet", "Heb ik nog niet"]]},
+             {"id": "nas_soort", "type": "keuze", "label": "Hoe deelt de NAS zijn mappen?", "toon": ["backup", "nas"],
+              "opties": [["", "— kies —"], ["smb", "SMB / Windows-delen (standaard bij Synology, QNAP, ...)"],
+                         ["nfs", "NFS"], ["weet niet", "Weet ik niet"]],
+              "hulp": "Weet je het niet, dan is het bijna altijd SMB."},
+             {"id": "nas_adres", "type": "tekst", "label": "Naam of IP-adres van de NAS", "toon": ["backup", "nas"],
+              "plaats": "bv. 192.168.1.10 of mijnnas.local", "leeg_mag": True},
+             {"id": "nas_map", "type": "tekst", "label": "Gedeelde map op de NAS", "toon": ["backup", "nas"],
+              "plaats": "bv. backup of homes/jan", "leeg_mag": True},
+             {"id": "nas_login", "type": "keuze", "label": "Moet je inloggen om in die map te schrijven?",
+              "toon": ["backup", "nas"], "opties": _ja_nee(),
+              "hulp": "Het wachtwoord vul je hier niet in: het hoort niet in dit bestand, dat je aan een AI-assistent "
+                      "geeft. Maak op de NAS liefst een aparte gebruiker die enkel in deze map mag schrijven."},
+             {"id": "nas_gebruiker", "type": "tekst", "label": "Gebruikersnaam op de NAS (geen wachtwoord)",
+              "toon": [["backup", "nas"], ["nas_login", "ja"]], "plaats": "bv. hems-backup", "leeg_mag": True},
+             {"id": "nas_gekoppeld", "type": "keuze", "label": "Is de NAS-map al gekoppeld op deze pc?",
+              "toon": ["backup", "nas"],
+              "opties": [["", "— kies —"], ["ja", "Ja, als map (bv. /mnt/nas)"], ["nee", "Nee"],
+                         ["weet niet", "Weet ik niet"]],
+              "hulp": "Het meetsysteem schrijft enkel naar een map. De NAS moet dus eerst door Linux gekoppeld zijn; "
+                      "hoe dat moet, staat bij Instellingen → Algemeen → Extra kopie van de back-up."},
              {"id": "gezin", "type": "keuze", "label": "Gebruikt een niet-technisch gezinslid het systeem ook?",
               "opties": _ja_nee()},
          ]},
@@ -480,6 +500,20 @@ def _contract_details(cfg):
     return uit
 
 
+def _zichtbaar(toon, g):
+    """Zelfde regel als zichtbaar() in de pagina: ["veld", waarde] of een lijst van zulke paren (allemaal waar)."""
+    def een(a, b):
+        x = g.get(a, "")
+        if isinstance(b, list):
+            return str(x) in b
+        if isinstance(b, bool):
+            return bool(x) == b
+        return str(x) == str(b)
+    if isinstance(toon[0], list):
+        return all(een(a, b) for a, b in toon)
+    return een(*toon)
+
+
 def markdown(cfg, cfgpad, db_pad):
     d = lees(cfgpad)
     map_ = os.path.dirname(os.path.dirname(os.path.abspath(cfgpad)))
@@ -507,10 +541,8 @@ def markdown(cfg, cfgpad, db_pad):
             if v["type"] == "kop":
                 kop = f"- **{v['label']}**"     # pas tonen als er een aangevinkt item onder staat
                 continue
-            if v.get("toon"):
-                a, b = v["toon"]
-                if str(g.get(a, "")) != str(b):
-                    continue
+            if v.get("toon") and not _zichtbaar(v["toon"], g):
+                continue
             x = g.get(v["id"])
             if v["type"] == "vink":
                 if x:
@@ -524,6 +556,11 @@ def markdown(cfg, cfgpad, db_pad):
                 x = t if x else ""
             kop = None                           # een gewone vraag sluit de groep af
             lijst.append(f"- {v['label']}: {x if x else '(niet ingevuld)'}")
+        if s["id"] == "vl_systeem" and g.get("backup") == "nas":
+            lijst.append("- Voor de AI-assistent: vraag het wachtwoord van de NAS nooit in de chat en zet het niet in "
+                         "een bestand van het project. Laat de gebruiker het zelf in een bestand zetten dat alleen root "
+                         "kan lezen (bv. /etc/hems-nas.cred, chmod 600) en koppel de NAS via /etc/fstab (nofail, "
+                         "x-systemd.automount). Het meetsysteem schrijft dan naar die map (Instellingen → Algemeen).")
         uit += lijst + [""]
     gev = d.get("vl_toestellen_zoeken", {}).get("gevonden", [])
     uit += ["## Gevonden op het thuisnetwerk", ""]

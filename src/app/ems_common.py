@@ -777,6 +777,15 @@ def nieuwe_versie(cfg):
 
 # ---------- back-up van de metingen ----------
 
+def zelfde_schijf(map_, cfgpad):
+    """True als map_ op hetzelfde bestandssysteem ligt als het project: dan is een USB-stick of NAS niet gekoppeld
+    en zou de 'extra kopie' gewoon op de eigen schijf belanden."""
+    try:
+        return os.stat(map_).st_dev == os.stat(pad_in_project(cfgpad, ".")).st_dev
+    except OSError:
+        return False
+
+
 def backup_db(cfgpad, cfg, aantal=None):
     """Maakt een gecomprimeerde kopie van de databank in backup-db/ (de laatste 'aantal' blijven, standaard 7)
     en zet ze, als [opslag] backup_map ingevuld is, ook in die map (bv. een USB-stick of netwerkmap).
@@ -818,6 +827,8 @@ def backup_db(cfgpad, cfg, aantal=None):
         try:
             if not os.path.isdir(extra):
                 raise OSError("map niet gevonden (zit de USB-stick erin, is de netwerkmap gekoppeld?)")
+            if zelfde_schijf(extra, cfgpad):
+                raise OSError("de map ligt op de schijf van deze pc zelf (USB-stick of NAS niet gekoppeld?)")
             sub = os.path.join(extra, "hems-backup")
             os.makedirs(sub, exist_ok=True)
             shutil.copy2(os.path.join(doel_map, naam), os.path.join(sub, naam + ".bezig"))
